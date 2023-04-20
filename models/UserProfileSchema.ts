@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose';
-import { match } from 'assert';
 
 const UserProfileSchema = new Schema(
   {
