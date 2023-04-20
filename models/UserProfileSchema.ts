@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { match } from 'assert';
 
 const UserProfileSchema = new Schema(
   {
@@ -28,7 +29,6 @@ const UserProfileSchema = new Schema(
     portfolioUrls: [String],
     projectUrls: {
       type: [String],
-      match: [/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, 'Invalid URL'],
       required: true,
     },
     bio: {
