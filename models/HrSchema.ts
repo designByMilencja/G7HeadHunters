@@ -1,6 +1,7 @@
 import { Schema, model } from 'mongoose';
+import {HrEntity} from "../types";
 
-const HrSchema = new Schema(
+const HrSchema = new Schema<HrEntity>(
   {
     email: {
       type: String,

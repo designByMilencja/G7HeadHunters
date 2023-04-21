@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
-import {AdminEntity} from "../types/users";
+import {AdminEntity} from "../types";
+
 
 const AdminSchema = new Schema<AdminEntity>(
   {
