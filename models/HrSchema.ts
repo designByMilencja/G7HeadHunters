@@ -5,7 +5,7 @@ const HrSchema = new Schema(
     email: {
       type: String,
       required: true,
-      max: 50,
+      max: 64,
       unique: true,
       match: [/^(.+)@(.+)$/, 'Invalid email'],
     },
