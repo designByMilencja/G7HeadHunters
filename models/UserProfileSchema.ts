@@ -6,7 +6,7 @@ const UserProfileSchema = new Schema<UserProfileEntity>(
     email: {
       type: String,
       required: true,
-      max: 50,
+      max: 64,
       unique: true,
       match: [/^(.+)@(.+)$/, 'Invalid email'],
     },
