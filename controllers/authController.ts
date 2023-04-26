@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { hashPwd } from '../utils/hashPwd';
 import { UserDb } from '../models/UserSchema';
+import { handleEmail } from '../utils/handleEmail';
+import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 import { ValidationError } from '../utils/handleError';
 
 export const register = async (req: Request, res: Response) => {
@@ -62,6 +64,59 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
         httpOnly: true,
       })
       .send({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  const { email } = req.body;
+
+  try {
+    const user = await UserDb.findOne({ email });
+    if (!user) throw new ValidationError('User not found');
+
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    user.token = token;
+    await user.save();
+
+    const link = `${process.env.CORS_ORIGIN}/reset-password/${token}`;
+
+    await handleEmail({
+      to: user.email,
+      subject: 'Reset pasasword',
+      html: forgotPwdEmailTemplate(link),
+    });
+
+    res.send({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
+  const { token, password } = req.body;
+
+  try {
+    if (!token) throw new ValidationError('Token not exist');
+
+    jwt.verify(token, process.env.JWT_SECRET, (err: jwt.VerifyErrors) => {
+      if (err) {
+        return res.status(403).send({ message: 'Invalid token' });
+      }
+    });
+
+    const user = await UserDb.findOne({ token });
+    if (!user) throw new ValidationError('User not found');
+
+    user.password = await hashPwd(password);
+    user.token = null;
+    await user.save();
+
+    res.send({ ok: true });
   } catch (err) {
     next(err);
   }
