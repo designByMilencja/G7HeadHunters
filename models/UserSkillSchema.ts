@@ -1,6 +1,7 @@
 import { Schema, model } from 'mongoose';
+import { IUserSkills } from "../types/user-skills";
 
-const UserSkillSchema = new Schema(
+const UserSkillsSchema = new Schema<IUserSkills>(
   {
     email: {
       type: String,
@@ -46,4 +47,4 @@ const UserSkillSchema = new Schema(
   { timestamps: true, versionKey: false }
 );
 
-export const UserSkillDb = model('UserSkill', UserSkillSchema);
+export const UserSkillDb = model('UserSkill', UserSkillsSchema);

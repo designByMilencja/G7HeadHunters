@@ -1,31 +1,7 @@
 import { Schema, model, Model, Document } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
+import { IAdmin, IHR, IUser } from "../types";
 
-interface IUser {
-  email: string;
-  password: string;
-  token?: string | null;
-  role: 'Admin' | 'Kursant' | 'HR';
-  active?: boolean;
-  status?: 'Dostępny' | 'W trakcie rozmowy' | 'Zatrudniony';
-}
-interface IHR {
-  email: string;
-  password: string;
-  token?: string | null;
-  role: 'Admin' | 'Kursant' | 'HR';
-  fullName: string;
-  company: string;
-  maxReservedStudents?: number;
-  users?: string[];
-}
-
-interface IAdmin {
-  email: string;
-  password: string;
-  token?: string | null;
-  role: 'Admin' | 'Kursant' | 'HR';
-}
 interface IUserDocument extends IUser, IHR, IAdmin, Document {}
 interface IUserModel extends Model<IUserDocument> {
   createNewUser(user: IUser, role: 'Admin' | 'Kursant' | 'HR'): Promise<IUserDocument>;
@@ -100,7 +76,7 @@ UserSchema.pre('findOne', function (next) {
 
 UserSchema.pre('findOne', function (next) {
   if (this.getQuery().role === 'HR') {
-    this.select('email password token role fullName company maxReservedStudents users');
+    this.select('email password token role fullName company maxReservedStudents user-skills');
   }
   next();
 });

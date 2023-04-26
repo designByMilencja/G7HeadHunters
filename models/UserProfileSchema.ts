@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
-import {UserProfileEntity} from "../types";
+import {IUserProfileEntity} from "../types";
 
-const UserProfileSchema = new Schema<UserProfileEntity>(
+const UserProfileSchema = new Schema<IUserProfileEntity>(
   {
     email: {
       type: String,

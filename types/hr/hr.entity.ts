@@ -1,8 +1,10 @@
-import {AdminEntity} from "../admin";
-import {Types} from "mongoose"
-export interface HrEntity extends AdminEntity {
-    fullName: string,
+export interface IHR {
+    email: string;
+    password: string;
+    token?: string | null;
+    role: 'Admin' | 'Kursant' | 'HR';
+    fullName: string;
     company: string;
-    maxReservedStudents: number;
-    users: Types.Array<string>;
+    maxReservedStudents?: number;
+    users?: string[];
 }

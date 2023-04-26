@@ -1,6 +1,6 @@
 import {Types} from "mongoose";
 
-export interface UserProfileEntity {
+export interface IUserProfileEntity {
     email: string;
     phone: string;
     firstName: string;
