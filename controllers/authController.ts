@@ -28,7 +28,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     if (!user) throw new ValidationError('User not found');
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new ValidationError('Incorrect handleEmail or password');
+    if (!isMatch) throw new ValidationError('Incorrect email or password');
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: process.env.EXPIRES_TOKEN,
@@ -69,7 +69,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-export const forgotEmail = async (req: Request, res: Response, next: NextFunction) => {
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
   const { email } = req.body;
 
   try {
