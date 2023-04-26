@@ -76,7 +76,7 @@ UserSchema.pre('findOne', function (next) {
 
 UserSchema.pre('findOne', function (next) {
   if (this.getQuery().role === 'HR') {
-    this.select('email password token role fullName company maxReservedStudents user-skills');
+    this.select('email password token role fullName company maxReservedStudents users');
   }
   next();
 });
