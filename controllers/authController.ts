@@ -96,3 +96,28 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
+export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
+  const { token, password } = req.body;
+
+  try {
+    if (!token) throw new ValidationError('Token not exist');
+
+    jwt.verify(token, process.env.JWT_SECRET, (err: jwt.VerifyErrors) => {
+      if (err) {
+        return res.status(403).send({ message: 'Invalid token' });
+      }
+    });
+
+    const user = await UserDb.findOne({ token });
+    if (!user) throw new ValidationError('User not found');
+
+    user.password = await hashPwd(password);
+    user.token = null;
+    await user.save();
+
+    res.send({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
