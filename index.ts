@@ -14,6 +14,7 @@ import { db } from './utils/db';
 import { handleError } from './utils/handleError';
 import { homeRouter } from './routers/home.router';
 import { authRouter } from './routers/auth.router';
+import { adminRouter } from './routers/admin.router';
 
 dotenv.config();
 const app = express();
@@ -37,6 +38,7 @@ app.use(
 
 app.use('/auth', authRouter);
 app.use('/', homeRouter);
+app.use('/admin', adminRouter);
 
 app.use(handleError);
 
