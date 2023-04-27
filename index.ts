@@ -12,7 +12,7 @@ import { db } from './utils/db';
 // import nodemailer from "nodemailer";
 // import {v4 as uuid} from "uuid";
 import { handleError } from './utils/handleError';
-import { homeRouter } from './routers/home.router';
+import { adminRouter } from './routers/admin.router';
 import { authRouter } from './routers/auth.router';
 
 dotenv.config();
@@ -36,7 +36,7 @@ app.use(
 );
 
 app.use('/auth', authRouter);
-app.use('/', homeRouter);
+app.use('/', adminRouter);
 
 app.use(handleError);
 
