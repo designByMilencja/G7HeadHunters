@@ -3,36 +3,53 @@ import { readFile, unlink } from 'fs/promises';
 import { parse } from 'papaparse';
 import path from 'path';
 import { storageDir } from '../utils/handleFile';
-import { UserSkillDb } from '../models/UserSkillSchema';
+import { UserSkillDb } from '../models/UserSkillsSchema';
+import { ICsvSkillsErrors, IUserSkills } from '../types/user-skills';
+import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
 import { ValidationError } from '../utils/handleError';
 
-//TODO do zastąpienia po dodani typów
-interface ISkills {
-  email: string;
-  courseCompletion: number;
-  courseEngagement: number;
-  projectDegree: number;
-  teamProjectDegree: number;
-  bonusProjectUrls: [];
-}
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
   if (!csvFile) throw new ValidationError('No file found');
 
   try {
     const csv = await readFile(path.join(storageDir(), 'csv', csvFile.filename), 'utf8');
-    const { data } = parse(csv, {
+    const {
+      meta: { fields },
+      data,
+    } = parse(csv, {
       header: true,
       skipEmptyLines: true,
     });
 
-    //TODO validacja
-    const error = false;
+    const headers = validateHeader(fields);
+    const isHeaderError = headers.some(({ errors }) => errors?.error);
 
-    if (error) {
-      await unlink(path.join(storageDir(), 'csv', csvFile.filename));
+    if (isHeaderError) {
+      return res.status(200).send({ errors: isHeaderError, headers, rows: [] });
     }
-    res.status(200).send({ ok: true, fileName: csvFile.filename });
+
+    const rows = await Promise.all(
+      data.map(async (data: any) => {
+        const errors: ICsvSkillsErrors = {};
+
+        errors.email = await validateRowEmail(data.email);
+        errors.courseCompletion = validateRow(data.courseCompletion);
+        errors.courseEngagement = validateRow(data.courseEngagement);
+        errors.teamProjectDegree = validateRow(data.teamProjectDegree);
+        errors.projectDegree = validateRow(data.projectDegree);
+        errors.bonusProjectUrls = validateRowUrls(data.bonusProjectUrls);
+
+        return { row: data, errors };
+      })
+    );
+
+    const isRowError = rows.some((row) => {
+      const { errors } = row;
+      return Object.values(errors).some((error) => Boolean(error));
+    });
+
+    res.status(200).send({ isRowError, headers, rows });
   } catch (err) {
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));
@@ -52,7 +69,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
     });
 
     const addSkill = await Promise.all(
-      data.map(async (data: ISkills) => {
+      data.map(async (data: IUserSkills) => {
         const skills = new UserSkillDb({
           email: data.email,
           projectDegree: data.projectDegree,
