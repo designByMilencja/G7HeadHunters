@@ -4,7 +4,7 @@ import { parse } from 'papaparse';
 import path from 'path';
 import { storageDir } from '../utils/handleFile';
 import { UserSkillDb } from '../models/UserSkillsSchema';
-import { ICsvSkillsErrors, IUserSkills } from '../types/user-skills';
+import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types/user-skills';
 import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
 import { ValidationError } from '../utils/handleError';
 
@@ -22,34 +22,44 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
       skipEmptyLines: true,
     });
 
-    const headers = validateHeader(fields);
-    const isHeaderError = headers.some(({ errors }) => errors?.error);
+    const headers = validateHeader(fields).filter((header) => header !== null);
 
-    if (isHeaderError) {
-      return res.status(200).send({ errors: isHeaderError, headers, rows: [] });
+    if (headers.length > 0) {
+      return res.status(200).send({ errors: headers });
     }
 
-    const rows = await Promise.all(
-      data.map(async (data: any) => {
-        const errors: ICsvSkillsErrors = {};
+    const emailsFromCsv = data.map((data: IUserSkills) => data.email);
 
-        errors.email = await validateRowEmail(data.email);
-        errors.courseCompletion = validateRow(data.courseCompletion);
-        errors.courseEngagement = validateRow(data.courseEngagement);
-        errors.teamProjectDegree = validateRow(data.teamProjectDegree);
-        errors.projectDegree = validateRow(data.projectDegree);
-        errors.bonusProjectUrls = validateRowUrls(data.bonusProjectUrls);
+    const duplicateEmails: ICsvValidation[] = emailsFromCsv
+      .map((email: string, i: number) => {
+        const duplicate = emailsFromCsv.indexOf(email) !== i;
+        return duplicate ? { row: i + 1, field: email, message: 'Ten email już istnieje' } : null;
+      })
+      .filter((data) => data !== null);
 
-        return { row: data, errors };
+    const rowsFromCsv = await Promise.all(
+      data.map(async (dataCsv: any, i) => {
+        const errors = {} as ICsvSkillsErrors;
+        const row = i + 1;
+
+        errors.email = await validateRowEmail(dataCsv.email, i + 1, duplicateEmails);
+        errors.courseCompletion = validateRow(dataCsv.courseCompletion, row);
+        errors.courseEngagement = validateRow(dataCsv.courseEngagement, row);
+        errors.teamProjectDegree = validateRow(dataCsv.teamProjectDegree, row);
+        errors.projectDegree = validateRow(dataCsv.projectDegree, row);
+        errors.bonusProjectUrls = validateRowUrls(dataCsv.bonusProjectUrls, row);
+
+        return Object.values(errors).some((error) => error) ? errors : null;
       })
     );
 
-    const isRowError = rows.some((row) => {
-      const { errors } = row;
-      return Object.values(errors).some((error) => Boolean(error));
-    });
+    const rows = rowsFromCsv.filter((row) => row !== null);
 
-    res.status(200).send({ isRowError, headers, rows });
+    if (rows.length > 0) {
+      return res.status(200).send({ errors: rows });
+    }
+
+    res.status(200).send({ ok: true, fileName: csvFile.filename });
   } catch (err) {
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));

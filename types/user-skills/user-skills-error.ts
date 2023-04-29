@@ -8,20 +8,16 @@ export const HEADERFIELDS = [
 ];
 
 export interface ICsvValidation {
+  row?: number;
   field: string;
-  error?: boolean;
-  message?: string;
+  message: string;
 }
 
-export interface ICsvHeaderErrors {
-  field: string;
-  errors?: ICsvValidation | undefined;
-}
 export interface ICsvSkillsErrors {
-  email?: ICsvValidation;
-  courseCompletion?: ICsvValidation;
-  courseEngagement?: ICsvValidation;
-  projectDegree?: ICsvValidation;
-  teamProjectDegree?: ICsvValidation;
-  bonusProjectUrls?: ICsvValidation[];
+  email: ICsvValidation;
+  courseCompletion: ICsvValidation;
+  courseEngagement: ICsvValidation;
+  projectDegree: ICsvValidation;
+  teamProjectDegree: ICsvValidation;
+  bonusProjectUrls: ICsvValidation[];
 }
