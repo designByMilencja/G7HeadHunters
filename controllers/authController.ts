@@ -6,7 +6,7 @@ import { UserDb } from '../models/UserSchema';
 import { handleEmail } from '../utils/handleEmail';
 import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 import { genToken } from '../utils/token';
-import { filterUser } from '../utils/filterRespons';
+import { filterHr, filterUser } from '../utils/filterRespons';
 import { ValidationError } from '../utils/handleError';
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -22,6 +22,26 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     const savedUser = await UserDb.createNewUser(newUser, newUser.role);
 
     res.status(201).send(filterUser(savedUser));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const registerHr = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password, fullName, company } = req.body;
+
+  try {
+    const newUser = new UserDb({
+      email,
+      password: await hashPwd(password),
+      role: 'HR',
+      fullName,
+      company,
+    });
+
+    const savedUser = await UserDb.createNewUser(newUser, newUser.role);
+
+    res.status(201).send(filterHr(savedUser));
   } catch (err) {
     next(err);
   }
@@ -44,6 +64,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     user.token = token;
     const savedUser = await user.save();
 
+    let filteredResponse;
+    if (user.role === 'Kursant') filteredResponse = filterUser(savedUser);
+    if (user.role === 'HR') filteredResponse = filterHr(savedUser);
+
     res
       .status(200)
       .cookie('token', token, {
@@ -51,7 +75,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         domain: 'localhost',
         httpOnly: true,
       })
-      .send(filterUser(savedUser));
+      .send(filteredResponse);
   } catch (err) {
     next(err);
   }
