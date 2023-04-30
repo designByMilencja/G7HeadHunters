@@ -119,7 +119,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 
     await handleEmail({
       to: user.email,
-      subject: 'Reset pasasword',
+      subject: 'Zresetuj hasło',
       html: forgotPwdEmailTemplate(link),
     });
 
