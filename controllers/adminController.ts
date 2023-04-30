@@ -6,6 +6,10 @@ import { storageDir } from '../utils/handleFile';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types/user-skills';
 import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
+import { handleEmail } from '../utils/handleEmail';
+import { genToken } from '../utils/token';
+import { UserDb } from '../models/UserSchema';
+import { forgotRegisterEmailTemplate } from '../templates/forgotRegisterEmailTemplate';
 import { ValidationError } from '../utils/handleError';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
@@ -61,6 +65,9 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
 
     res.status(200).send({ ok: true, fileName: csvFile.filename });
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new ValidationError('File not found');
+    }
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));
     }
@@ -78,31 +85,51 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
       skipEmptyLines: true,
     });
 
-    const addSkill = await Promise.all(
+    const addSkills = await Promise.all(
       data.map(async (data: IUserSkills) => {
+        const { email, projectDegree, courseCompletion, courseEngagement, teamProjectDegree, bonusProjectUrls } = data;
+
         const skills = new UserSkillDb({
-          email: data.email,
-          projectDegree: data.projectDegree,
-          courseCompletion: data.courseCompletion,
-          courseEngagement: data.courseEngagement,
-          teamProjectDegree: data.teamProjectDegree,
-          bonusProjectUrls: data.bonusProjectUrls
+          email,
+          projectDegree,
+          courseCompletion,
+          courseEngagement,
+          teamProjectDegree,
+          bonusProjectUrls: bonusProjectUrls
             .toString()
             .split(',')
             .map((d) => d.trim()),
         });
+
+        const user = await UserDb.findOne({ email, role: 'Kursant' });
+
+        const token = genToken(user._id, '7d');
+        user.token = token;
+        user.save();
+
+        const link = `${process.env.CORS_ORIGIN}/register/${user._id}/${token}`;
+
+        await handleEmail({
+          to: user.email,
+          subject: 'Rejestracja użytkownika',
+          html: forgotRegisterEmailTemplate(link),
+        });
+
         return skills.save();
       })
     );
 
-    if (data.length === addSkill.length) {
+    if (data.length === addSkills.length) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     } else {
       res.send({ message: 'Something went wrong, try again' });
     }
 
-    res.status(201).send(addSkill);
+    res.status(201).send(addSkills);
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new ValidationError('File not found');
+    }
     if (fileName) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     }
