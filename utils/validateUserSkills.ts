@@ -46,8 +46,13 @@ export const validateRowEmail = async (
   }
 
   const existUser = await UserDb.findOne({ email: email, role: 'Kursant' });
+
   if (!existUser) {
     return { row, field: email, message: 'Użytkownik nie istnieje w bazie danych' };
+  }
+
+  if (existUser && existUser.active === true) {
+    return { row, field: email, message: 'Użytkownik jest już zarejestrowany w serwisie' };
   }
 
   return undefined;
