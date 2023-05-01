@@ -11,6 +11,8 @@ import { genToken } from '../utils/token';
 import { UserDb } from '../models/UserSchema';
 import { forgotRegisterEmailTemplate } from '../templates/forgotRegisterEmailTemplate';
 import { ValidationError } from '../utils/handleError';
+import { hashPwd } from '../utils/hashPwd';
+import { filterHr } from '../utils/filterRespons';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
@@ -133,6 +135,26 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
     if (fileName) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     }
+    next(err);
+  }
+};
+
+export const registerHr = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password, fullName, company } = req.body;
+
+  try {
+    const newUser = new UserDb({
+      email,
+      password: await hashPwd(password),
+      role: 'HR',
+      fullName,
+      company,
+    });
+
+    const savedUser = await UserDb.createNewUser(newUser, newUser.role);
+
+    res.status(201).send(filterHr(savedUser));
+  } catch (err) {
     next(err);
   }
 };
