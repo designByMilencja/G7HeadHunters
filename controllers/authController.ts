@@ -27,26 +27,6 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const registerHr = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password, fullName, company } = req.body;
-
-  try {
-    const newUser = new UserDb({
-      email,
-      password: await hashPwd(password),
-      role: 'HR',
-      fullName,
-      company,
-    });
-
-    const savedUser = await UserDb.createNewUser(newUser, newUser.role);
-
-    res.status(201).send(filterHr(savedUser));
-  } catch (err) {
-    next(err);
-  }
-};
-
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
@@ -67,6 +47,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     let filteredResponse;
     if (user.role === 'Kursant') filteredResponse = filterUser(savedUser);
     if (user.role === 'HR') filteredResponse = filterHr(savedUser);
+    if (user.role === 'Admin') filteredResponse = filterAdmin(savedUser);
 
     res
       .status(200)
