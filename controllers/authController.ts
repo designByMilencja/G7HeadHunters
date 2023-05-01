@@ -6,7 +6,7 @@ import { UserDb } from '../models/UserSchema';
 import { handleEmail } from '../utils/handleEmail';
 import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 import { genToken } from '../utils/token';
-import { filterHr, filterUser } from '../utils/filterRespons';
+import { filterAdmin, filterHr, filterUser } from '../utils/filterRespons';
 import { ValidationError } from '../utils/handleError';
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -149,6 +149,29 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
     await user.save();
 
     res.status(200).send({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+  const { password } = req.body;
+  const { token } = req.cookies;
+
+  try {
+    const user = await UserDb.findOne({ email: req.user.email, role: req.user.role });
+    if (!user) throw new ValidationError('User not found');
+    if (user.token !== token) throw new ValidationError('Invalid token');
+
+    user.password = await hashPwd(password);
+    const savedUser = await user.save();
+
+    let filteredResponse;
+    if (user.role === 'Kursant') filteredResponse = filterUser(savedUser);
+    if (user.role === 'HR') filteredResponse = filterHr(savedUser);
+    if (user.role === 'Admin') filteredResponse = filterAdmin(savedUser);
+
+    res.status(200).json(filteredResponse);
   } catch (err) {
     next(err);
   }
