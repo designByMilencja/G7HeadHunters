@@ -3,11 +3,12 @@ import { upload } from '../utils/handleFile';
 import { validation } from '../middlewares/validation';
 import { registerHrSchema } from '../utils/validateHrRegisterRequest';
 import { verifyCookie } from '../middlewares/auth';
-import { validateUserSkills, saveUserSkills, registerHr } from '../controllers/adminController';
+import { registerHr, saveUserSkills, validateUserSkills } from '../controllers/adminController';
+import { ROLES, verifyRole } from '../middlewares/checkRole';
 
 export const adminRouter = Router();
 
 adminRouter
-  .post('/validate-csv', upload.single('csvFile'), verifyCookie, validateUserSkills)
-  .post('/save-csv', verifyCookie, saveUserSkills)
-  .post('/register-hr', validation(registerHrSchema), verifyCookie, registerHr);
+  .post('/validate-csv', verifyCookie, verifyRole(ROLES.admin), upload.single('csvFile'), validateUserSkills)
+  .post('/save-csv', verifyCookie, verifyRole(ROLES.admin), saveUserSkills)
+  .post('/register-hr', verifyCookie, verifyRole(ROLES.admin), validation(registerHrSchema), registerHr);
