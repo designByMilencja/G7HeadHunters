@@ -128,10 +128,11 @@ UserSchema.statics.createNewUser = async function (user, role) {
       const hrData: IHR = {
         email: user.email,
         password: user.password,
+        token: user.token,
         role: user.role,
         fullName: user.fullName,
         company: user.company,
-        maxReservedStudents: 0,
+        maxReservedStudents: user.maxReservedStudents,
         users: [],
       };
       const createdHr = await this.create(hrData);
