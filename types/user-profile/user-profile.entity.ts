@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 
 export interface IUserProfileEntity {
-  _id: Types.ObjectId;
+  _id?: Types.ObjectId;
   email: string;
   phone: string;
   firstName: string;
