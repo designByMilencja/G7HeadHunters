@@ -109,7 +109,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
         user.token = token;
         user.save();
 
-        const link = `${process.env.CORS_ORIGIN}/register/${user._id}/${token}`;
+        const link = `${process.env.CORS_ORIGIN}/reset-password/${token}`;
 
         await handleEmail({
           to: user.email,
