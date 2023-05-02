@@ -1,10 +1,13 @@
+import { Types } from 'mongoose';
+
 export interface IHR {
-    email: string;
-    password: string;
-    token?: string | null;
-    role: 'Admin' | 'Kursant' | 'HR';
-    fullName: string;
-    company: string;
-    maxReservedStudents?: number;
-    users?: string[];
+  _id: Types.ObjectId;
+  email: string;
+  password: string;
+  token?: string | null;
+  role: 'Admin' | 'Kursant' | 'HR';
+  fullName: string;
+  company: string;
+  maxReservedStudents: number;
+  users?: string[];
 }

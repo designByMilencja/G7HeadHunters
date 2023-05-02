@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 export interface IUserSkills {
+  _id: Types.ObjectId;
   email: string;
   courseCompletion: number;
   courseEngagement: number;
