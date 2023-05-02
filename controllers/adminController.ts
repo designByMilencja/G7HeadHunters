@@ -13,8 +13,6 @@ import { registerEmailTemplate } from '../templates/registerEmailTemplate';
 import { ValidationError } from '../utils/handleError';
 import { hashPwd } from '../utils/hashPwd';
 import { filterHr } from '../utils/filterRespons';
-import { uuidV4 } from 'mongodb/src/utils';
-import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
