@@ -82,6 +82,12 @@ UserSchema.pre('findOne', function (next) {
 });
 
 UserSchema.statics.createNewUser = async function (user, role) {
+  const existingUser = await this.findOne({ email: user.email });
+
+  if (existingUser) {
+    throw new ValidationError('Podany email istnieje już w bazie.');
+  }
+
   switch (role) {
     case 'Kursant':
       const userData: IUser = {
@@ -98,10 +104,11 @@ UserSchema.statics.createNewUser = async function (user, role) {
       const hrData: IHR = {
         email: user.email,
         password: user.password,
+        token: user.token,
         role: user.role,
         fullName: user.fullName,
         company: user.company,
-        maxReservedStudents: 0,
+        maxReservedStudents: user.maxReservedStudents,
         users: [],
       };
       const createdHr = await this.create(hrData);
