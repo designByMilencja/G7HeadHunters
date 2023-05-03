@@ -1,6 +1,6 @@
 import { Schema, model, Model, Document } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
-import { IAdmin, IHR, IUser } from "../types";
+import { IAdmin, IHR, IUser } from '../types';
 
 interface IUserDocument extends Omit<IUser, '_id'>, Omit<IHR, '_id'>, Omit<IAdmin, '_id'>, Document {}
 interface IUserModel extends Model<IUserDocument> {

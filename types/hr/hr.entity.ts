@@ -11,3 +11,5 @@ export interface IHR {
   maxReservedStudents: number;
   users?: string[];
 }
+
+export type HrRespons = Omit<IHR, 'password' | 'token'>;

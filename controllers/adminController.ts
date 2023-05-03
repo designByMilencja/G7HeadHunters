@@ -9,8 +9,10 @@ import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '
 import { handleEmail } from '../utils/handleEmail';
 import { genToken } from '../utils/token';
 import { UserDb } from '../models/UserSchema';
-import { forgotRegisterEmailTemplate } from '../templates/forgotRegisterEmailTemplate';
+import { registerEmailTemplate } from '../templates/registerEmailTemplate';
 import { ValidationError } from '../utils/handleError';
+import { hashPwd } from '../utils/hashPwd';
+import { filterHr } from '../utils/filterRespons';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
@@ -103,7 +105,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
 
         const user = await UserDb.findOne({ email, role: 'Kursant' });
 
-        const token = genToken(user._id, '7d');
+        const token = genToken(user._id, process.env.EXPIRES_REGISTER_TOKEN);
         user.token = token;
         user.save();
 
@@ -112,7 +114,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
         await handleEmail({
           to: user.email,
           subject: 'Rejestracja użytkownika',
-          html: forgotRegisterEmailTemplate(link),
+          html: registerEmailTemplate(link),
         });
 
         return skills.save();
@@ -133,6 +135,41 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
     if (fileName) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     }
+    next(err);
+  }
+};
+
+export const registerHr = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, fullName, company, maxReservedStudents } = req.body;
+
+  const randomPassword = Math.random().toString(36).slice(-8);
+
+  try {
+    const newUser = new UserDb({
+      email,
+      password: await hashPwd(randomPassword),
+      role: 'HR',
+      fullName,
+      company,
+      maxReservedStudents,
+    });
+
+    const newHr = await UserDb.createNewUser(newUser, newUser.role);
+
+    const token = genToken(newHr._id, process.env.EXPIRES_REGISTER_TOKEN);
+    newHr.token = token;
+    await newHr.save();
+
+    const link = `${process.env.CORS_ORIGIN}/reset-password/${token}`;
+
+    await handleEmail({
+      to: newHr.email,
+      subject: 'Rejestracja użytkownika',
+      html: registerEmailTemplate(link),
+    });
+
+    res.status(201).send(filterHr(newHr));
+  } catch (err) {
     next(err);
   }
 };

@@ -9,3 +9,5 @@ export interface IUser {
   active?: boolean;
   status?: 'Dostępny' | 'W trakcie rozmowy' | 'Zatrudniony';
 }
+
+export type UserRespons = Omit<IUser, 'password' | 'token'>;
