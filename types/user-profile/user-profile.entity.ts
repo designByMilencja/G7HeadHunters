@@ -7,7 +7,7 @@ export interface IUserProfileEntity {
   firstName: string;
   lastName: string;
   githubUsername: string;
-  portfolioUrls: Types.Array<string>;
+  portfolioUrls: Types.Array<object>;
   projectUrls: Types.Array<string>;
   bio: string;
   expectedTypeWork: string;
