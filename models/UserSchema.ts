@@ -2,7 +2,7 @@ import { Schema, model, Model, Document } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
 import { IAdmin, IHR, IUser } from "../types";
 
-interface IUserDocument extends IUser, IHR, IAdmin, Document {}
+interface IUserDocument extends Omit<IUser, '_id'>, Omit<IHR, '_id'>, Omit<IAdmin, '_id'>, Document {}
 interface IUserModel extends Model<IUserDocument> {
   createNewUser(user: IUser, role: 'Admin' | 'Kursant' | 'HR'): Promise<IUserDocument>;
 }
