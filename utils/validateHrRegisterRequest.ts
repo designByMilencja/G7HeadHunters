@@ -6,7 +6,7 @@ export const registerHrSchema = yup.object().shape({
   company: yup.string().required('Nazwę firmy jest wymagane do rejestracji.'),
   maxReservedStudents: yup
     .number()
-    .min(0, 'Minimalna liczba osób 0.')
+    .min(1, 'Minimalna liczba osób to 1.')
     .max(999, 'Maksymalna liczba osób 999.')
     .required('Podaj maksymalną liczbę osób umówionych na rozmowę.'),
 });
