@@ -1,4 +1,5 @@
-import { Types } from 'mongoose';
+import { PopulatedDoc, Types, Document } from 'mongoose';
+import { IUserProfileEntity } from '../user-profile';
 
 export interface IUserSkills {
   _id?: Types.ObjectId;
@@ -8,5 +9,5 @@ export interface IUserSkills {
   projectDegree: number;
   teamProjectDegree: number;
   bonusProjectUrls: Types.Array<string>;
-  profile?: Types.ObjectId;
+  profile?: PopulatedDoc<IUserProfileEntity & Document>;
 }
