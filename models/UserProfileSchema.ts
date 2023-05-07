@@ -42,7 +42,7 @@ const UserProfileSchema = new Schema<IUserProfileEntity>(
     },
     portfolioUrls: [String],
     projectUrls: {
-      type: [String],
+      type: [UrlsSchema],
       required: true,
     },
     bio: {
