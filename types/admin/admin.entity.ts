@@ -7,3 +7,5 @@ export interface IAdmin {
   token?: string | null;
   role: 'Admin' | 'Kursant' | 'HR';
 }
+
+export type AdminRespons = Omit<IAdmin, 'password' | 'token'>;

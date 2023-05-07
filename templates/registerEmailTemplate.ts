@@ -1,4 +1,4 @@
-export const forgotRegisterEmailTemplate = (url: string) => {
+export const registerEmailTemplate = (url: string) => {
   return `
     <h1>Rejestracja</h1>
     <p>Kliknij poniższy przycisk, aby dokończyć rejestrację użytkownika:</p>
