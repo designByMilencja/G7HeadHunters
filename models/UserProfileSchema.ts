@@ -1,11 +1,21 @@
 import { Schema, model } from 'mongoose';
+import { IUserProfileEntity } from '../types';
+import { UserSkillDb } from './UserSkillsSchema';
+import { ValidationError } from '../utils/handleError';
 
-const UserProfileSchema = new Schema(
+const UrlsSchema = new Schema(
+  {
+    url: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const UserProfileSchema = new Schema<IUserProfileEntity>(
   {
     email: {
       type: String,
       required: true,
-      max: 50,
+      max: 64,
       unique: true,
       match: [/^(.+)@(.+)$/, 'Invalid email'],
     },
@@ -24,6 +34,11 @@ const UserProfileSchema = new Schema(
     githubUsername: {
       type: String,
       required: true,
+      unique: true,
+    },
+    githubAvatar: {
+      type: String,
+      default: '',
     },
     portfolioUrls: [String],
     projectUrls: {
@@ -77,4 +92,18 @@ const UserProfileSchema = new Schema(
   },
   { timestamps: true, versionKey: false }
 );
+
+UserProfileSchema.post<IUserProfileEntity>('save', async (user, next) => {
+  const userSkill = await UserSkillDb.findOne({ email: user.email });
+  if (!userSkill) {
+    throw new ValidationError(`Brak w bazie umiejętności użytkownika o emailu: ${user.email}`);
+  }
+
+  if (!userSkill.profile) {
+    userSkill.profile = user._id;
+    userSkill.save();
+  }
+
+  next();
+});
 export const UserProfileDb = model('UserProfile', UserProfileSchema);
