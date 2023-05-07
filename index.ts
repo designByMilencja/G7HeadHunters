@@ -21,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
+    credentials: true,
     origin: process.env.CORS_ORIGIN,
   })
 );
