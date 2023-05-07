@@ -1,5 +1,14 @@
 import { Schema, model } from 'mongoose';
-import {IUserProfileEntity} from "../types";
+import { IUserProfileEntity } from '../types';
+import { UserSkillDb } from './UserSkillsSchema';
+import { ValidationError } from '../utils/handleError';
+
+const UrlsSchema = new Schema(
+  {
+    url: { type: String, required: true },
+  },
+  { _id: false }
+);
 
 const UserProfileSchema = new Schema<IUserProfileEntity>(
   {
@@ -25,6 +34,11 @@ const UserProfileSchema = new Schema<IUserProfileEntity>(
     githubUsername: {
       type: String,
       required: true,
+      unique: true,
+    },
+    githubAvatar: {
+      type: String,
+      default: '',
     },
     portfolioUrls: [String],
     projectUrls: {
@@ -78,4 +92,18 @@ const UserProfileSchema = new Schema<IUserProfileEntity>(
   },
   { timestamps: true, versionKey: false }
 );
+
+UserProfileSchema.post<IUserProfileEntity>('save', async (user, next) => {
+  const userSkill = await UserSkillDb.findOne({ email: user.email });
+  if (!userSkill) {
+    throw new ValidationError(`Brak w bazie umiejętności użytkownika o emailu: ${user.email}`);
+  }
+
+  if (!userSkill.profile) {
+    userSkill.profile = user._id;
+    userSkill.save();
+  }
+
+  next();
+});
 export const UserProfileDb = model('UserProfile', UserProfileSchema);
