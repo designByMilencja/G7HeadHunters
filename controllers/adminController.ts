@@ -4,7 +4,7 @@ import { parse } from 'papaparse';
 import path from 'path';
 import { storageDir } from '../utils/handleFile';
 import { UserSkillDb } from '../models/UserSkillsSchema';
-import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types/user-skills';
+import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types';
 import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
 import { handleEmail } from '../utils/handleEmail';
 import { genToken } from '../utils/token';
@@ -12,7 +12,7 @@ import { UserDb } from '../models/UserSchema';
 import { registerEmailTemplate } from '../templates/registerEmailTemplate';
 import { ValidationError } from '../utils/handleError';
 import { hashPwd } from '../utils/hashPwd';
-import { filterHr } from '../utils/filterRespons';
+import { filterAdmin, filterHr } from '../utils/filterRespons';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
@@ -169,6 +169,23 @@ export const registerHr = async (req: Request, res: Response, next: NextFunction
     });
 
     res.status(201).send(filterHr(newHr));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+
+  try {
+    if (req.user._id.toString() !== id) {
+      throw new ValidationError('Token not match to user');
+    }
+
+    const user = await UserDb.findById(id);
+    if (!user) throw new ValidationError('User not found');
+
+    res.status(200).send(filterAdmin(user));
   } catch (err) {
     next(err);
   }
