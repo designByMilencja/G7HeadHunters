@@ -3,13 +3,6 @@ import { IUserProfileEntity } from '../types';
 import { UserSkillDb } from './UserSkillsSchema';
 import { ValidationError } from '../utils/handleError';
 
-const UrlsSchema = new Schema(
-  {
-    url: { type: String, required: true },
-  },
-  { _id: false }
-);
-
 const UserProfileSchema = new Schema<IUserProfileEntity>(
   {
     email: {
@@ -42,7 +35,7 @@ const UserProfileSchema = new Schema<IUserProfileEntity>(
     },
     portfolioUrls: [String],
     projectUrls: {
-      type: [UrlsSchema],
+      type: [String],
       required: true,
     },
     bio: {
