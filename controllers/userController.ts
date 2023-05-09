@@ -5,6 +5,11 @@ import { UserProfileDb } from '../models/UserProfileSchema';
 import { InfoResponse, ProfileResponse } from '../types';
 import { getGitHubUser } from '../utils/getGitHubUser';
 import { ValidationError } from '../utils/handleError';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+
+interface DecodedToken extends JwtPayload {
+  _id: string;
+}
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
@@ -59,7 +64,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const addUserProfile = async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
+  const { id, token } = req.params;
 
   const {
     email,
@@ -82,9 +87,19 @@ export const addUserProfile = async (req: Request, res: Response, next: NextFunc
   } = req.body;
 
   try {
-    if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
-    }
+    if (!token) throw new ValidationError('Token not exist');
+
+    jwt.verify(token, process.env.JWT_SECRET, (err: jwt.VerifyErrors, decoded: DecodedToken) => {
+      if (err) {
+        return res.status(403).send({ message: 'Invalid token' });
+      }
+      if (decoded._id !== id) {
+        return res.status(400).send({ message: 'Token not match to user' });
+      }
+    });
+
+    const user = await UserDb.findOne({ email, token });
+    if (!user) throw new ValidationError('User not found');
 
     let githubAvatar = await getGitHubUser(githubUsername);
     if (!githubAvatar) githubAvatar = '';
@@ -109,6 +124,10 @@ export const addUserProfile = async (req: Request, res: Response, next: NextFunc
       workExperience,
       courses,
     });
+
+    user.token = null;
+    user.active = true;
+    user.save();
 
     const savedProfile = await userProfile.save();
 

@@ -9,5 +9,5 @@ export const userRouter = Router();
 
 userRouter
   .get('/:id', verifyCookie, verifyRole(ROLES.user), getUser)
-  .post('/:id', verifyCookie, verifyRole(ROLES.user), validation(registerUserSchema), addUserProfile)
+  .post('/:id/:token', validation(registerUserSchema), addUserProfile)
   .put('/:id', verifyCookie, verifyRole(ROLES.user), validation(registerUserSchema), updateUserProfile);
