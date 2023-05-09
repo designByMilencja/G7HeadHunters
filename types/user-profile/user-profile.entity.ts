@@ -1,9 +1,5 @@
 import { Types } from 'mongoose';
 
-interface Urls {
-  url: string;
-}
-
 export interface IUserProfileEntity {
   _id?: Types.ObjectId;
   email: string;
@@ -12,8 +8,8 @@ export interface IUserProfileEntity {
   lastName: string;
   githubUsername: string;
   githubAvatar?: string;
-  portfolioUrls?: Types.Array<string>;
-  projectUrls: Types.Array<Urls>;
+  portfolioUrls?: Array<string>;
+  projectUrls: Array<string>;
   bio?: string;
   expectedTypeWork: 'Na miejscu' | 'Gotowość do przeprowadzki' | 'Wyłącznie zdalnie' | 'Hybrydowo' | 'Bez znaczenia';
   targetWorkCity?: string;
@@ -42,6 +38,14 @@ interface Expectations {
   monthsOfCommercialExp: number;
 }
 
+export interface UserSkillsExpectations extends Skills, Expectations {
+  _id?: Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+}
+
 export interface InfoResponse {
   avatar: string;
   firstName: string;
@@ -58,9 +62,9 @@ export interface ProfileResponse {
   education?: string;
   courses?: string;
   workExperience?: string;
-  portfolioUrls?: Types.Array<string>;
-  bonusProjectUrls: Types.Array<string>;
-  projectUrls: Types.Array<string>;
+  portfolioUrls?: Array<string>;
+  bonusProjectUrls: Array<string>;
+  projectUrls: Array<string>;
 }
 
 export interface UserProfilResponse {

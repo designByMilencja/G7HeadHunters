@@ -8,6 +8,6 @@ export interface IUserSkills {
   courseEngagement: number;
   projectDegree: number;
   teamProjectDegree: number;
-  bonusProjectUrls: Types.Array<string>;
+  bonusProjectUrls: Array<string>;
   profile?: PopulatedDoc<IUserProfileEntity & Document>;
 }
