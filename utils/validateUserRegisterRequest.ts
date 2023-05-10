@@ -8,20 +8,11 @@ export const registerUserSchema = yup.object().shape({
   firstName: yup.string().required('Imię jest wymagane do rejestracji.'),
   lastName: yup.string().required('Nazwisko jest wymagane do rejestracji.'),
   githubUsername: yup.string().required('Nazwa użytkowania github jest wymagane do rejestracji.'),
-  portfolioUrls: yup
-    .array()
-    .of(yup.string().matches(/^https?:\/\/(www\.)?github\.com\/.*$/, 'Nie poprawny adres url'))
-    .notRequired(),
+  portfolioUrls: yup.array().of(yup.string().url('Nie poprawny adres url')).notRequired(),
   projectUrls: yup
     .array()
-    .of(
-      yup.object().shape({
-        url: yup
-          .string()
-          .matches(/^https?:\/\/(www\.)?github\.com\/.*$/, 'Nie poprawny adres url')
-          .required(),
-      })
-    )
+    .of(yup.string().matches(/^https?:\/\/(www\.)?github\.com\/.*$/, 'Nie poprawny adres url'))
+    .required()
     .min(2, 'Wymagane jest podanie adresów do FE i BE')
     .required('Dodaj adresy url do projektu końcowego'),
   bio: yup.string().notRequired(),
