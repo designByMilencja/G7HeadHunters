@@ -8,22 +8,22 @@ export const registerUserSchema = yup.object().shape({
   firstName: yup.string().required('Imię jest wymagane do rejestracji.'),
   lastName: yup.string().required('Nazwisko jest wymagane do rejestracji.'),
   githubUsername: yup.string().required('Nazwa użytkowania github jest wymagane do rejestracji.'),
-  portfolioUrls: yup.array().of(yup.string().url('Nie poprawny adres url')).notRequired(),
+  portfolioUrls: yup.array().of(yup.string().url('Nie poprawny adres url do Twojego portfolio')).notRequired(),
   projectUrls: yup
     .array()
-    .of(yup.string().matches(/^https?:\/\/(www\.)?github\.com\/.*$/, 'Nie poprawny adres url'))
+    .of(yup.string().matches(/^https?:\/\/(www\.)?github\.com\/.*$/, 'Nie poprawny adres url projektu końcowego'))
     .required()
-    .min(2, 'Wymagane jest podanie adresów do FE i BE')
+    .min(2, 'Wymagane jest podanie adresów do projektu na FE i BE')
     .required('Dodaj adresy url do projektu końcowego'),
   bio: yup.string().notRequired(),
   expectedTypeWork: yup
     .string()
-    .oneOf(WORKTYPE, 'Nie prawidłowe miejsce pracy')
+    .oneOf(WORKTYPE, 'Nie prawidłowe dane w polu oczekiwane miejsce pracy.')
     .required('Wybierz preferowane miejsc pracy'),
   targetWorkCity: yup.string().notRequired(),
   expectedContractType: yup
     .string()
-    .oneOf(CONTRACTTYPE, 'Nie prawidłowe typ kontraktu')
+    .oneOf(CONTRACTTYPE, 'Nie prawidłowe dane w polu typ kontraktu')
     .required('Wybierz preferowane typ kontraktu'),
   expectedSalary: yup.string().notRequired(),
   canTakeApprenticeship: yup
@@ -32,9 +32,9 @@ export const registerUserSchema = yup.object().shape({
     .required('Wybierz czy zgadzasz się na odbycie bezpłatnego stażu.'),
   monthsOfCommercialExp: yup
     .number()
-    .positive('Tylko liczby dodanie')
-    .integer('Tylko liczby naturalne')
-    .typeError('Dozwolone są tylko liczny naturalne')
+    .min(0, 'Minimalna liczba miesięcy doświadczenia komercyjnego to 0')
+    .integer('Tylko liczby naturalne w polu ilość miesięcy doświadczenia komercyjnego.')
+    .typeError('Dozwolone są tylko liczny naturalne w polu ilość miesięcy doświadczenia komercyjnego')
     .notRequired(),
   education: yup.string().notRequired(),
   workExperience: yup.string().notRequired(),
