@@ -50,6 +50,7 @@ export interface InfoResponse {
   avatar: string;
   firstName: string;
   lastName: string;
+  githubUsername: string;
   email: string;
   phone?: string;
   bio?: string;
