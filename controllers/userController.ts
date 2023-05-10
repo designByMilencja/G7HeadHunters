@@ -29,6 +29,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
       firstName: userData.profile.firstName,
       lastName: userData.profile.lastName,
       email: user.email,
+      githubUsername: userData.profile.githubUsername,
       phone: userData.profile.phone,
       bio: userData.profile.bio,
       status: user.status,
