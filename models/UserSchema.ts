@@ -1,11 +1,22 @@
 import { Schema, model, Model, Document } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
-import { IAdmin, IHR, IUser } from '../types';
+import { IAdmin, IHR, IStatus, IUser } from '../types';
+import { UserProfileDb } from './UserProfileSchema';
 
 interface IUserDocument extends Omit<IUser, '_id'>, Omit<IHR, '_id'>, Omit<IAdmin, '_id'>, Document {}
 interface IUserModel extends Model<IUserDocument> {
   createNewUser(user: IUser, role: 'Admin' | 'Kursant' | 'HR'): Promise<IUserDocument>;
 }
+
+const StatusSchema = new Schema<IStatus>(
+  {
+    status: {
+      type: String,
+      enum: ['Dostępny', 'W trakcie rozmowy', 'Zatrudniony'],
+    },
+  },
+  { _id: false, timestamps: true, versionKey: false }
+);
 
 const UserSchema = new Schema<IUserDocument, IUserModel>(
   {
@@ -34,8 +45,7 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
       type: Boolean,
     },
     status: {
-      type: String,
-      enum: ['Dostępny', 'W trakcie rozmowy', 'Zatrudniony'],
+      type: StatusSchema,
     },
     fullName: {
       type: String,
@@ -95,7 +105,7 @@ UserSchema.statics.createNewUser = async function (user, role) {
         password: user.password,
         role: user.role,
         active: false,
-        status: 'Dostępny',
+        status: { status: 'Dostępny' },
       };
       const createdUser = await this.create(userData);
       return createdUser.save();
@@ -127,5 +137,18 @@ UserSchema.statics.createNewUser = async function (user, role) {
       throw new ValidationError('Invalid user role');
   }
 };
+
+UserSchema.pre('save', async function (next) {
+  if (this.isModified('status') && this.status.status === 'W trakcie rozmowy') {
+    const userProfile = await UserProfileDb.findOne({ email: this.email });
+
+    if (userProfile) {
+      const tenDays = 24 * 60 * 60 * 10000;
+      userProfile.reservationExpiryDate = new Date(this.status.updatedAt.getTime() + tenDays);
+      await userProfile.save();
+    }
+  }
+  next();
+});
 
 export const UserDb = model<IUserDocument, IUserModel>('User', UserSchema);
