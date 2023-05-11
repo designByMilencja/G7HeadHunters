@@ -13,6 +13,7 @@ import { adminRouter } from './routers/admin.router';
 import { userRouter } from './routers/user.router';
 import { hrRouter } from './routers/hr.router';
 import { handleError } from './utils/handleError';
+import { job } from './utils/scheduleOfChangeStatus';
 
 dotenv.config();
 const app = express();
@@ -33,6 +34,8 @@ app.use(
     max: 10000,
   })
 );
+
+job.start();
 
 app.use('/auth', authRouter);
 app.use('/', homeRouter);
