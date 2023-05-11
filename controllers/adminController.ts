@@ -10,9 +10,10 @@ import { handleEmail } from '../utils/handleEmail';
 import { genToken } from '../utils/token';
 import { UserDb } from '../models/UserSchema';
 import { registerEmailTemplate } from '../templates/registerEmailTemplate';
-import { ValidationError } from '../utils/handleError';
+import { registerHrEmailTemplate } from '../templates/registerHrEmailTemplate';
 import { hashPwd } from '../utils/hashPwd';
 import { filterAdmin, filterHr } from '../utils/filterRespons';
+import { ValidationError } from '../utils/handleError';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
@@ -103,18 +104,26 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
             .map((d) => d.trim()),
         });
 
-        const user = await UserDb.findOne({ email, role: 'Kursant' });
+        const randomPassword = Math.random().toString(36).slice(-8);
+
+        const newUser = new UserDb({
+          email,
+          password: await hashPwd(randomPassword),
+          role: 'Kursant',
+        });
+
+        const user = await UserDb.createNewUser(newUser, newUser.role);
 
         const token = genToken(user._id, process.env.EXPIRES_REGISTER_TOKEN);
         user.token = token;
-        user.save();
+        await user.save();
 
         const link = `${process.env.CORS_ORIGIN}/register/${user._id}/${token}`;
 
         await handleEmail({
           to: user.email,
           subject: 'Rejestracja użytkownika',
-          html: registerEmailTemplate(link),
+          html: registerEmailTemplate(link, email, randomPassword),
         });
 
         return skills.save();
@@ -156,16 +165,12 @@ export const registerHr = async (req: Request, res: Response, next: NextFunction
 
     const newHr = await UserDb.createNewUser(newUser, newUser.role);
 
-    const token = genToken(newHr._id, process.env.EXPIRES_REGISTER_TOKEN);
-    newHr.token = token;
-    await newHr.save();
-
-    const link = `${process.env.CORS_ORIGIN}/reset-password/${token}`;
+    const link = `${process.env.CORS_ORIGIN}/`;
 
     await handleEmail({
       to: newHr.email,
       subject: 'Rejestracja użytkownika',
-      html: registerEmailTemplate(link),
+      html: registerHrEmailTemplate(link, email, randomPassword),
     });
 
     res.status(201).send(filterHr(newHr));
