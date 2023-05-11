@@ -32,7 +32,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
       githubUsername: userData.profile.githubUsername,
       phone: userData.profile.phone,
       bio: userData.profile.bio,
-      status: user.status,
+      status: user.status.status,
     };
 
     const profile: ProfileResponse = {
