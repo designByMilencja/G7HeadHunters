@@ -42,5 +42,8 @@ export const userToHrResponse = (user: PopulatedDoc<IUserProfileEntity & Documen
     expectedSalary: user.profile.expectedSalary,
     canTakeApprenticeship: user.profile.canTakeApprenticeship,
     monthsOfCommercialExp: user.profile.monthsOfCommercialExp,
+    reservationExpiryDate: user.profile.reservationExpiryDate
+      ? user.profile.reservationExpiryDate.toISOString().slice(0, 10)
+      : '',
   };
 };
