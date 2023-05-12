@@ -8,7 +8,7 @@ import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const availableUsers = await UserDb.find({ status: 'Dostępny', active: true }).distinct('email').lean();
+    const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
 
     const users = await UserSkillDb.find({ email: { $in: availableUsers } }).populate('profile');
     if (!users) throw new ValidationError('Users not found');
