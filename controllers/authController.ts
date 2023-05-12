@@ -9,24 +9,6 @@ import { genToken } from '../utils/token';
 import { filterAdmin, filterHr, filterUser } from '../utils/filterRespons';
 import { ValidationError } from '../utils/handleError';
 
-export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body;
-
-  try {
-    const newUser = new UserDb({
-      email,
-      password: await hashPwd(password),
-      role: 'Kursant',
-    });
-
-    const savedUser = await UserDb.createNewUser(newUser, newUser.role);
-
-    res.status(201).send(filterUser(savedUser));
-  } catch (err) {
-    next(err);
-  }
-};
-
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
