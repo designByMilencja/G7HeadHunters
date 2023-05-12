@@ -1,7 +1,7 @@
 import { UserDb } from '../models/UserSchema';
 import { CronJob } from 'cron';
 
-export const job = new CronJob('* * * * *', async () => {
+export const job = new CronJob('0 0 * * *', async () => {
   const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
   const usersToUpdate = await UserDb.find({
     'status.status': 'W trakcie rozmowy',
