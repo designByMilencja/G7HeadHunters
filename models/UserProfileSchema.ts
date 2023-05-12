@@ -82,6 +82,9 @@ const UserProfileSchema = new Schema<IUserProfileEntity>(
       type: String,
       default: '',
     },
+    reservationExpiryDate: {
+      type: Date,
+    },
   },
   { timestamps: true, versionKey: false }
 );

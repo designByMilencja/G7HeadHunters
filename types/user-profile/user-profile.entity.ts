@@ -20,6 +20,7 @@ export interface IUserProfileEntity {
   education?: string;
   workExperience?: string;
   courses?: string;
+  reservationExpiryDate?: Date;
 }
 
 interface Skills {
@@ -44,6 +45,7 @@ export interface UserSkillsExpectations extends Skills, Expectations {
   firstName: string;
   lastName: string;
   avatar: string;
+  reservationExpiryDate?: Date;
 }
 
 export interface InfoResponse {

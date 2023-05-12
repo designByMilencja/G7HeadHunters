@@ -8,7 +8,7 @@ import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const availableUsers = await UserDb.find({ status: 'Dostępny', active: true }).distinct('email').lean();
+    const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
 
     const users = await UserSkillDb.find({ email: { $in: availableUsers } }).populate('profile');
     if (!users) throw new ValidationError('Users not found');
@@ -84,15 +84,24 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
       throw new ValidationError('Token not match to user');
     }
 
-    const hr = await UserDb.findById(id);
-    hr.users.push(email);
-    hr.save();
-
     const user = await UserDb.findOne({ email });
     if (!user) throw new ValidationError('Users not found');
 
-    user.status = status;
+    user.status.status = status;
     user.save();
+
+    const hr = await UserDb.findById(id);
+    const isUserInArray = hr.users.includes(email);
+
+    if (status === 'W trakcie rozmowy' && !isUserInArray) {
+      hr.users.push(email);
+      hr.save();
+    }
+
+    if (status !== 'W trakcie rozmowy' && isUserInArray) {
+      hr.users = hr.users.filter((e) => e !== email);
+      hr.save();
+    }
 
     res.status(200).send(user);
   } catch (err) {
