@@ -3,7 +3,7 @@ import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserDb } from '../models/UserSchema';
 import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillsExpectations } from '../types';
-import { userToHrResponse } from '../utils/filterRespons';
+import { filterHr, userToHrResponse } from '../utils/filterRespons';
 import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -87,6 +87,7 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
     const user = await UserDb.findOne({ email });
     if (!user) throw new ValidationError('Users not found');
 
+    if (user.status.status === status) throw new ValidationError(`Kursant jest już ${status}`);
     user.status.status = status;
     user.save();
 
@@ -94,6 +95,9 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
     const isUserInArray = hr.users.includes(email);
 
     if (status === 'W trakcie rozmowy' && !isUserInArray) {
+      const notMaxReservedStudents = hr.maxReservedStudents > hr.users.length;
+      if (!notMaxReservedStudents) throw new ValidationError('Masz już maksymalną liczbę zarezerwowanych studentów.');
+
       hr.users.push(email);
       hr.save();
     }
@@ -103,7 +107,7 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
       hr.save();
     }
 
-    res.status(200).send(user);
+    res.status(200).send(filterHr(hr));
   } catch (err) {
     next(err);
   }
