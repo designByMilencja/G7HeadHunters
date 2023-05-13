@@ -4,16 +4,19 @@ import { UserDb } from '../models/UserSchema';
 import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillsExpectations } from '../types';
 import { filterHr, userToHrResponse } from '../utils/filterRespons';
+import { pagination } from '../utils/pagination';
 import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
   try {
     const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
 
-    const users = await UserSkillDb.find({ email: { $in: availableUsers } }).populate('profile');
-    if (!users) throw new ValidationError('Users not found');
+    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: availableUsers } }), page, limit);
 
-    const availableUsersProfile = users
+    const availableUsersProfile = results
       .map((user): UserSkillsExpectations => {
         if (user.profile && user.profile._id !== null) {
           return userToHrResponse(user);
@@ -21,7 +24,7 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
       })
       .filter((user) => user);
 
-    res.status(200).send(availableUsersProfile);
+    res.status(200).send({ users: availableUsersProfile, page, totalPages });
   } catch (err) {
     next(err);
   }
@@ -29,9 +32,11 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
 
 export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
   const { search } = req.body || '';
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
 
   try {
-    const searchData = await UserProfileDb.find({
+    const searchUsers = await UserProfileDb.find({
       $or: [
         { email: { $regex: search } },
         { phone: { $regex: search } },
@@ -51,32 +56,9 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
       .distinct('email')
       .lean();
 
-    const searchResult = await Promise.all(
-      searchData.map((email) => UserSkillDb.findOne({ email }).populate('profile'))
-    );
+    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: searchUsers } }), page, limit);
 
-    const searchUsers = searchResult.map((user): UserSkillsExpectations => userToHrResponse(user));
-
-    res.status(200).send(searchUsers);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const reservedUsers = async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  try {
-    if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
-    }
-
-    const hr = await UserDb.findById(id);
-
-    const reservedUsers = await Promise.all(
-      hr.users.map((email) => UserSkillDb.findOne({ email }).populate('profile'))
-    );
-
-    const reservedUsersProfile = reservedUsers
+    const searchUsersProfile = results
       .map((user): UserSkillsExpectations => {
         if (user.profile && user.profile._id !== null) {
           return userToHrResponse(user);
@@ -84,7 +66,35 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
       })
       .filter((user) => user);
 
-    res.status(200).send(reservedUsersProfile);
+    res.status(200).send({ users: searchUsersProfile, page, totalPages });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const reservedUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  try {
+    if (req.user._id.toString() !== id) {
+      throw new ValidationError('Token not match to user');
+    }
+
+    const hr = await UserDb.findById(id);
+
+    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: hr.users } }), page, limit);
+
+    const reservedUsersProfile = results
+      .map((user): UserSkillsExpectations => {
+        if (user.profile && user.profile._id !== null) {
+          return userToHrResponse(user);
+        }
+      })
+      .filter((user) => user);
+
+    res.status(200).send({ users: reservedUsersProfile, page, totalPages });
   } catch (err) {
     next(err);
   }
@@ -133,6 +143,9 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
 };
 
 export const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
   const {
     courseCompletion,
     courseEngagement,
@@ -153,21 +166,20 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
       profile: { $exists: true },
     };
 
-    const filterUsers = await UserSkillDb.find(filter).populate({
-      path: 'profile',
-      match: {
-        expectedTypeWork: expectedTypeWork ?? {
-          $in: ['Na miejscu', 'Gotowość do przeprowadzki', 'Wyłącznie zdalnie', 'Hybrydowo', 'Bez znaczenia'],
-        },
-        expectedSalary: { $gte: expectedSalary ?? '' },
-        canTakeApprenticeship: canTakeApprenticeship ?? {
-          $in: ['TAK', 'NIE'],
-        },
-        monthsOfCommercialExp: { $gte: monthsOfCommercialExp ?? 0 },
+    const match = {
+      expectedTypeWork: expectedTypeWork ?? {
+        $in: ['Na miejscu', 'Gotowość do przeprowadzki', 'Wyłącznie zdalnie', 'Hybrydowo', 'Bez znaczenia'],
       },
-    });
+      expectedSalary: { $gte: expectedSalary ?? '' },
+      canTakeApprenticeship: canTakeApprenticeship ?? {
+        $in: ['TAK', 'NIE'],
+      },
+      monthsOfCommercialExp: { $gte: monthsOfCommercialExp ?? 0 },
+    };
 
-    const filtered = filterUsers
+    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit, match);
+
+    const filtered = results
       .map((user): UserSkillsExpectations => {
         if (user.profile && user.profile._id !== null) {
           return userToHrResponse(user);
@@ -175,7 +187,7 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
       })
       .filter((user) => user);
 
-    res.status(200).send(filtered);
+    res.status(200).send({ users: filtered, page, totalPages });
   } catch (err) {
     next(err);
   }
