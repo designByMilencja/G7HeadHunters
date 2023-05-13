@@ -1,9 +1,11 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import { IUserProfileEntity } from '../types';
 import { UserSkillDb } from './UserSkillsSchema';
 import { ValidationError } from '../utils/handleError';
 
-const UserProfileSchema = new Schema<IUserProfileEntity>(
+export interface IUserProfileDocument extends Omit<IUserProfileEntity, '_id'>, Document {}
+
+const UserProfileSchema = new Schema<IUserProfileDocument>(
   {
     email: {
       type: String,
@@ -102,4 +104,4 @@ UserProfileSchema.post<IUserProfileEntity>('save', async (user, next) => {
 
   next();
 });
-export const UserProfileDb = model('UserProfile', UserProfileSchema);
+export const UserProfileDb = model<IUserProfileDocument>('UserProfile', UserProfileSchema);
