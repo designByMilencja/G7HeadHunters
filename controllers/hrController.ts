@@ -38,12 +38,9 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
   try {
     const filter = {
       $or: [
-        { email: { $regex: search } },
-        { firstName: { $regex: search } },
-        { lastName: { $regex: search } },
-        { bio: { $regex: search } },
-        { education: { $regex: search } },
-        { courses: { $regex: search } },
+        { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { firstName: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { lastName: { $regex: `^.*${search}.*$`, $options: 'i' } },
       ],
       profile: { $exists: true },
     };
