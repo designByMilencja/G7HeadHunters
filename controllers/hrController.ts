@@ -95,6 +95,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
 export const setStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { email, status } = req.body;
+
   try {
     if (req.user._id.toString() !== id) {
       throw new ValidationError('Nie masz dostępu do tego zasobu.');
@@ -148,6 +149,8 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
     canTakeApprenticeship,
     monthsOfCommercialExp,
   } = req.body;
+
+  if (!req.body || Object.keys(req.body).length === 0) throw new ValidationError('Brak wybranych filtrów');
 
   try {
     const filter = {
