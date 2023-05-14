@@ -12,6 +12,7 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
 
   try {
     const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
+    if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
 
     const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: availableUsers } }), page, limit);
 
@@ -70,7 +71,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
 
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
     }
 
     const hr = await UserDb.findById(id);
@@ -96,14 +97,14 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
   const { email, status } = req.body;
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
     }
 
     const hr = await UserDb.findById(id);
-    if (!hr) throw new ValidationError('Hr not found');
+    if (!hr) throw new ValidationError(`Brak użytkownika z id: ${id}.`);
 
     const user = await UserDb.findOne({ email });
-    if (!user) throw new ValidationError('Users not found');
+    if (!user) throw new ValidationError(`Brak kursanta z adresem email: ${email}.`);
 
     const isUserInArray = hr.users.includes(email);
     if (user.status.status === 'W trakcie rozmowy' && !isUserInArray) {
@@ -116,7 +117,7 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
 
     if (status === 'W trakcie rozmowy' && !isUserInArray) {
       const notMaxReservedStudents = hr.maxReservedStudents > hr.users.length;
-      if (!notMaxReservedStudents) throw new ValidationError('Masz już maksymalną liczbę zarezerwowanych studentów.');
+      if (!notMaxReservedStudents) throw new ValidationError('Masz już maksymalną liczbę zarezerwowanych kursantów.');
 
       hr.users.push(email);
       hr.save();
