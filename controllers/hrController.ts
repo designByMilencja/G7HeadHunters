@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserDb } from '../models/UserSchema';
-import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillsExpectations } from '../types';
 import { filterHr, userToHrResponse } from '../utils/filterRespons';
 import { pagination } from '../utils/pagination';
@@ -24,7 +23,7 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
       })
       .filter((user) => user);
 
-    res.status(200).send({ users: availableUsersProfile, page, totalPages });
+    res.status(200).send({ users: availableUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -36,27 +35,19 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
   const limit = parseInt(req.query.limit as string) || 10;
 
   try {
-    const searchUsers = await UserProfileDb.find({
+    const filter = {
       $or: [
         { email: { $regex: search } },
-        { phone: { $regex: search } },
         { firstName: { $regex: search } },
         { lastName: { $regex: search } },
-        { githubUsername: { $regex: search } },
         { bio: { $regex: search } },
-        { expectedTypeWork: { $regex: search } },
-        { targetWorkCity: { $regex: search } },
-        { expectedContractType: { $regex: search } },
-        { expectedSalary: { $regex: search } },
         { education: { $regex: search } },
-        { workExperience: { $regex: search } },
         { courses: { $regex: search } },
       ],
-    })
-      .distinct('email')
-      .lean();
+      profile: { $exists: true },
+    };
 
-    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: searchUsers } }), page, limit);
+    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit);
 
     const searchUsersProfile = results
       .map((user): UserSkillsExpectations => {
@@ -66,7 +57,7 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
       })
       .filter((user) => user);
 
-    res.status(200).send({ users: searchUsersProfile, page, totalPages });
+    res.status(200).send({ users: searchUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -94,7 +85,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
       })
       .filter((user) => user);
 
-    res.status(200).send({ users: reservedUsersProfile, page, totalPages });
+    res.status(200).send({ users: reservedUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -187,7 +178,7 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
       })
       .filter((user) => user);
 
-    res.status(200).send({ users: filtered, page, totalPages });
+    res.status(200).send({ users: filtered, totalPages });
   } catch (err) {
     next(err);
   }
