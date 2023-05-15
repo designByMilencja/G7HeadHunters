@@ -6,8 +6,7 @@ const defaultLimit = 10;
 export const pagination = async (
   query: Query<Document<IUserSkillsDocument>[], Document<IUserSkillsDocument>, {}, IUserSkillsDocument>,
   page: number,
-  limit: number,
-  match?: any
+  limit: number
 ) => {
   limit = limits.includes(limit) ? limit : defaultLimit;
 
@@ -15,11 +14,11 @@ export const pagination = async (
     query
       .populate({
         path: 'profile',
-        match: match,
       })
       .skip((page - 1) * limit)
       .limit(limit)
-      .lean(),
+      .lean()
+      .exec(),
     query.model.countDocuments(query.getFilter()),
   ]);
 
