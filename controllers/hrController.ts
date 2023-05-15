@@ -1,21 +1,31 @@
 import { NextFunction, Request, Response } from 'express';
+import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserDb } from '../models/UserSchema';
-import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillsExpectations } from '../types';
 import { filterHr, userToHrResponse } from '../utils/filterRespons';
+import { pagination } from '../utils/pagination';
 import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
   try {
     const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
+    if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
 
-    const users = await UserSkillDb.find({ email: { $in: availableUsers } }).populate('profile');
-    if (!users) throw new ValidationError('Users not found');
+    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: availableUsers } }), page, limit);
 
-    const availableUsersProfile = users.map((user): UserSkillsExpectations => userToHrResponse(user));
+    const availableUsersProfile = results
+      .map((user): UserSkillsExpectations => {
+        if (user.profile && user.profile._id !== null) {
+          return userToHrResponse(user);
+        }
+      })
+      .filter((user) => user);
 
-    res.status(200).send(availableUsersProfile);
+    res.status(200).send({ users: availableUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -23,35 +33,33 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
 
 export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
   const { search } = req.body || '';
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
 
   try {
-    const searchData = await UserProfileDb.find({
+    const filter = {
       $or: [
-        { email: { $regex: search } },
-        { phone: { $regex: search } },
-        { firstName: { $regex: search } },
-        { lastName: { $regex: search } },
-        { githubUsername: { $regex: search } },
-        { bio: { $regex: search } },
-        { expectedTypeWork: { $regex: search } },
-        { targetWorkCity: { $regex: search } },
-        { expectedContractType: { $regex: search } },
-        { expectedSalary: { $regex: search } },
-        { education: { $regex: search } },
-        { workExperience: { $regex: search } },
-        { courses: { $regex: search } },
+        { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { firstName: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { lastName: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { expectedTypeWork: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { expectedContractType: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { canTakeApprenticeship: { $regex: `^.*${search}.*$`, $options: 'i' } },
       ],
-    })
-      .distinct('email')
-      .lean();
+    };
 
-    const searchResult = await Promise.all(
-      searchData.map((email) => UserSkillDb.findOne({ email }).populate('profile'))
-    );
+    const found = await UserProfileDb.find(filter).distinct('_id').lean();
+    const { results, totalPages } = await pagination(UserSkillDb.find({ profile: { $in: found } }), page, limit);
 
-    const searchUsers = searchResult.map((user): UserSkillsExpectations => userToHrResponse(user));
+    const searchUsersProfile = results
+      .map((user): UserSkillsExpectations => {
+        if (user.profile && user.profile._id !== null) {
+          return userToHrResponse(user);
+        }
+      })
+      .filter((user) => user);
 
-    res.status(200).send(searchUsers);
+    res.status(200).send({ users: searchUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -59,18 +67,27 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
 
 export const reservedUsers = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
     }
+
     const hr = await UserDb.findById(id);
 
-    const reservedUsers = await Promise.all(
-      hr.users.map((email) => UserSkillDb.findOne({ email }).populate('profile'))
-    );
+    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: hr.users } }), page, limit);
 
-    const reservedUsersProfile = reservedUsers.map((user): UserSkillsExpectations => userToHrResponse(user));
-    res.status(200).send(reservedUsersProfile);
+    const reservedUsersProfile = results
+      .map((user): UserSkillsExpectations => {
+        if (user.profile && user.profile._id !== null) {
+          return userToHrResponse(user);
+        }
+      })
+      .filter((user) => user);
+
+    res.status(200).send({ users: reservedUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
@@ -79,24 +96,30 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
 export const setStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { email, status } = req.body;
+
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
     }
 
+    const hr = await UserDb.findById(id);
+    if (!hr) throw new ValidationError(`Brak użytkownika z id: ${id}.`);
+
     const user = await UserDb.findOne({ email });
-    if (!user) throw new ValidationError('Users not found');
+    if (!user) throw new ValidationError(`Brak kursanta z adresem email: ${email}.`);
+
+    const isUserInArray = hr.users.includes(email);
+    if (user.status.status === 'W trakcie rozmowy' && !isUserInArray) {
+      throw new ValidationError(`Kursant jest już umówiony na rozmowę z inną firmą`);
+    }
 
     if (user.status.status === status) throw new ValidationError(`Kursant jest już ${status}`);
     user.status.status = status;
     user.save();
 
-    const hr = await UserDb.findById(id);
-    const isUserInArray = hr.users.includes(email);
-
     if (status === 'W trakcie rozmowy' && !isUserInArray) {
       const notMaxReservedStudents = hr.maxReservedStudents > hr.users.length;
-      if (!notMaxReservedStudents) throw new ValidationError('Masz już maksymalną liczbę zarezerwowanych studentów.');
+      if (!notMaxReservedStudents) throw new ValidationError('Masz już maksymalną liczbę zarezerwowanych kursantów.');
 
       hr.users.push(email);
       hr.save();
@@ -108,6 +131,41 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
     }
 
     res.status(200).send(filterHr(hr));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  const allowedFilters = ['courseCompletion', 'courseEngagement', 'projectDegree', 'teamProjectDegree'];
+  const isAllowed = Object.keys(req.body).every((key) => allowedFilters.includes(key));
+
+  if (!req.body || Object.keys(req.body).length === 0 || !isAllowed)
+    throw new ValidationError('Brak wybranych filtrów lub nieprawidłowy filtr');
+
+  const filter: { [key: string]: { $gte: number } } = {};
+
+  for (const field in req.body) {
+    if (req.body[field] !== undefined) {
+      filter[field] = { $gte: req.body[field] };
+    }
+  }
+
+  try {
+    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit);
+
+    const filtered = results
+      .map((user): UserSkillsExpectations => {
+        if (user.profile && user.profile._id !== null) {
+          return userToHrResponse(user);
+        }
+      })
+      .filter((user) => user);
+
+    res.status(200).send({ users: filtered, totalPages });
   } catch (err) {
     next(err);
   }

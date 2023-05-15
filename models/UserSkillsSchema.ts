@@ -1,7 +1,9 @@
-import { Schema, model } from 'mongoose';
-import { IUserSkills } from "../types/user-skills";
+import { Schema, model, Document } from 'mongoose';
+import { IUserSkills } from '../types';
 
-const UserSkillsSchema = new Schema<IUserSkills>(
+export interface IUserSkillsDocument extends Omit<IUserSkills, '_id'>, Document {}
+
+const UserSkillsSchema = new Schema<IUserSkillsDocument>(
   {
     email: {
       type: String,
@@ -47,4 +49,4 @@ const UserSkillsSchema = new Schema<IUserSkills>(
   { timestamps: true, versionKey: false }
 );
 
-export const UserSkillDb = model('UserSkill', UserSkillsSchema);
+export const UserSkillDb = model<IUserSkillsDocument>('UserSkill', UserSkillsSchema);
