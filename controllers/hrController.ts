@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { UserProfileDb } from '../models/UserProfileSchema';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserDb } from '../models/UserSchema';
 import { UserSkillsExpectations } from '../types';
@@ -41,11 +42,14 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
         { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
         { firstName: { $regex: `^.*${search}.*$`, $options: 'i' } },
         { lastName: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { expectedTypeWork: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { expectedContractType: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { canTakeApprenticeship: { $regex: `^.*${search}.*$`, $options: 'i' } },
       ],
-      profile: { $exists: true },
     };
 
-    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit);
+    const found = await UserProfileDb.find(filter).distinct('_id').lean();
+    const { results, totalPages } = await pagination(UserSkillDb.find({ profile: { $in: found } }), page, limit);
 
     const searchUsersProfile = results
       .map((user): UserSkillsExpectations => {
@@ -136,40 +140,22 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
-  const {
-    courseCompletion,
-    courseEngagement,
-    projectDegree,
-    teamProjectDegree,
-    expectedTypeWork,
-    expectedSalary,
-    canTakeApprenticeship,
-    monthsOfCommercialExp,
-  } = req.body;
+  const allowedFilters = ['courseCompletion', 'courseEngagement', 'projectDegree', 'teamProjectDegree'];
+  const isAllowed = Object.keys(req.body).every((key) => allowedFilters.includes(key));
 
-  if (!req.body || Object.keys(req.body).length === 0) throw new ValidationError('Brak wybranych filtrów');
+  if (!req.body || Object.keys(req.body).length === 0 || !isAllowed)
+    throw new ValidationError('Brak wybranych filtrów lub nieprawidłowy filtr');
+
+  const filter: { [key: string]: { $gte: number } } = {};
+
+  for (const field in req.body) {
+    if (req.body[field] !== undefined) {
+      filter[field] = { $gte: req.body[field] };
+    }
+  }
 
   try {
-    const filter = {
-      courseCompletion: { $gte: courseCompletion ?? 0 },
-      courseEngagement: { $gte: courseEngagement ?? 0 },
-      projectDegree: { $gte: projectDegree ?? 0 },
-      teamProjectDegree: { $gte: teamProjectDegree ?? 0 },
-      profile: { $exists: true },
-    };
-
-    const match = {
-      expectedTypeWork: expectedTypeWork ?? {
-        $in: ['Na miejscu', 'Gotowość do przeprowadzki', 'Wyłącznie zdalnie', 'Hybrydowo', 'Bez znaczenia'],
-      },
-      expectedSalary: { $gte: expectedSalary ?? '' },
-      canTakeApprenticeship: canTakeApprenticeship ?? {
-        $in: ['TAK', 'NIE'],
-      },
-      monthsOfCommercialExp: { $gte: monthsOfCommercialExp ?? 0 },
-    };
-
-    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit, match);
+    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit);
 
     const filtered = results
       .map((user): UserSkillsExpectations => {
