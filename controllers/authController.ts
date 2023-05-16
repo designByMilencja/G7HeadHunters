@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { hashPwd } from '../utils/hashPwd';
 import { UserDb } from '../models/UserSchema';
@@ -8,6 +8,10 @@ import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 import { genToken } from '../utils/token';
 import { filterAdmin, filterHr, filterUser } from '../utils/filterRespons';
 import { ValidationError } from '../utils/handleError';
+
+interface DecodedToken extends JwtPayload {
+  _id: string;
+}
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
@@ -119,12 +123,20 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
 
 export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
   const { password } = req.body;
-  const { token } = req.cookies;
+  const { id } = req.params;
 
   try {
-    const user = await UserDb.findOne({ email: req.user.email, role: req.user.role });
+    const user = await UserDb.findById(id);
     if (!user) throw new ValidationError('User not found');
-    if (user.token !== token) throw new ValidationError('Invalid token');
+
+    jwt.verify(req.cookies.token, process.env.JWT_SECRET, (err: jwt.VerifyErrors, decoded: DecodedToken) => {
+      if (err) {
+        return res.status(403).send({ message: 'Invalid token' });
+      }
+      if (decoded._id !== id) {
+        return res.status(400).send({ message: 'Token not match to user' });
+      }
+    });
 
     user.password = await hashPwd(password);
     const savedUser = await user.save();

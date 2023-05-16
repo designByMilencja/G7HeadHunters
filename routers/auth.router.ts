@@ -9,4 +9,4 @@ authRouter
   .get('/logout', verifyCookie, logout)
   .post('/reset-password', forgotPassword)
   .patch('/update-password', updatePassword)
-  .patch('/change-password', verifyCookie, changePassword);
+  .patch('/change-password/:id', verifyCookie, changePassword);
