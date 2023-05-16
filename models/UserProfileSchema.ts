@@ -59,8 +59,8 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
       default: 'Brak preferencji',
     },
     expectedSalary: {
-      type: String,
-      default: '',
+      type: Number,
+      default: 0,
     },
     canTakeApprenticeship: {
       type: String,
