@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { UserProfileDb } from '../models/UserProfileSchema';
-import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserDb } from '../models/UserSchema';
 import { UserSkillsExpectations } from '../types';
 import { filterHr, userToHrResponse } from '../utils/filterRespons';
-import { pagination } from '../utils/pagination';
+import { pagination, pipeline } from '../utils/pagination';
 import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -15,7 +13,7 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
     const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean();
     if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
 
-    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: availableUsers } }), page, limit);
+    const { results, totalPages } = await pagination(pipeline({ email: { $in: availableUsers } }), page, limit);
 
     const availableUsersProfile = results
       .map((user): UserSkillsExpectations => {
@@ -40,16 +38,12 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
     const filter = {
       $or: [
         { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { firstName: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { lastName: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { expectedTypeWork: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { expectedContractType: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { canTakeApprenticeship: { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { 'profile.firstName': { $regex: `^.*${search}.*$`, $options: 'i' } },
+        { 'profile.lastName': { $regex: `^.*${search}.*$`, $options: 'i' } },
       ],
     };
 
-    const found = await UserProfileDb.find(filter).distinct('_id').lean();
-    const { results, totalPages } = await pagination(UserSkillDb.find({ profile: { $in: found } }), page, limit);
+    const { results, totalPages } = await pagination(pipeline(filter), page, limit);
 
     const searchUsersProfile = results
       .map((user): UserSkillsExpectations => {
@@ -77,7 +71,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
 
     const hr = await UserDb.findById(id);
 
-    const { results, totalPages } = await pagination(UserSkillDb.find({ email: { $in: hr.users } }), page, limit);
+    const { results, totalPages } = await pagination(pipeline({ email: { $in: hr.users } }), page, limit);
 
     const reservedUsersProfile = results
       .map((user): UserSkillsExpectations => {
@@ -92,7 +86,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
-
+// @TODO wyslij maila adminowi ze kursant został zatrudniony
 export const setStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { email, status } = req.body;
@@ -140,24 +134,41 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
-  const allowedFilters = ['courseCompletion', 'courseEngagement', 'projectDegree', 'teamProjectDegree'];
-  const isAllowed = Object.keys(req.body).every((key) => allowedFilters.includes(key));
+  const {
+    courseCompletion,
+    courseEngagement,
+    projectDegree,
+    teamProjectDegree,
+    monthsOfCommercialExp,
+    expectedSalaryFrom,
+    expectedSalaryTo,
+    expectedTypeWork,
+    expectedContractType,
+    canTakeApprenticeship,
+  } = req.body;
 
-  if (!req.body || Object.keys(req.body).length === 0 || !isAllowed)
-    throw new ValidationError('Brak wybranych filtrów lub nieprawidłowy filtr');
-
-  const filter: { [key: string]: { $gte: number } } = {};
-
-  for (const field in req.body) {
-    if (req.body[field] !== undefined) {
-      filter[field] = { $gte: req.body[field] };
-    }
-  }
+  const filter = {
+    ...(courseCompletion && { courseCompletion: { $gte: parseInt(courseCompletion) } }),
+    ...(courseEngagement && { courseEngagement: { $gte: parseInt(courseEngagement) } }),
+    ...(projectDegree && { projectDegree: { $gte: parseInt(projectDegree) } }),
+    ...(teamProjectDegree && { teamProjectDegree: { $gte: parseInt(teamProjectDegree) } }),
+    ...(monthsOfCommercialExp && { 'profile.monthsOfCommercialExp': { $gte: parseInt(monthsOfCommercialExp) } }),
+    ...(expectedTypeWork && { 'profile.expectedTypeWork': { $eq: expectedTypeWork } }),
+    ...(expectedContractType && { 'profile.expectedContractType': { $eq: expectedContractType } }),
+    ...(canTakeApprenticeship && { 'profile.canTakeApprenticeship': { $eq: canTakeApprenticeship } }),
+    ...(expectedSalaryFrom &&
+      expectedSalaryTo && {
+        'profile.expectedSalary': {
+          $gte: parseInt(expectedSalaryFrom),
+          $lte: parseInt(expectedSalaryTo),
+        },
+      }),
+  };
 
   try {
-    const { results, totalPages } = await pagination(UserSkillDb.find(filter), page, limit);
+    const { results, totalPages } = await pagination(pipeline(filter), page, limit);
 
-    const filtered = results
+    const reservedUsersProfile = results
       .map((user): UserSkillsExpectations => {
         if (user.profile && user.profile._id !== null) {
           return userToHrResponse(user);
@@ -165,7 +176,7 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
       })
       .filter((user) => user);
 
-    res.status(200).send({ users: filtered, totalPages });
+    res.status(200).send({ users: reservedUsersProfile, totalPages });
   } catch (err) {
     next(err);
   }
