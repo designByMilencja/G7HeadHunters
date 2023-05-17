@@ -38,7 +38,9 @@ export const pagination = async (pipeline: PipelineStage[], page: number, limit:
     UserSkillDb.aggregate([...pipeline, { $count: 'count' }]).exec(),
   ])) as Result;
 
-  const totalPages = Math.ceil(total[0].count / limit);
+  const totalCount = results.length > 0 ? total[0].count : 0;
 
-  return { results, totalPages };
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return { results, totalCount, totalPages };
 };
