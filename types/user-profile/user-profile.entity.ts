@@ -14,7 +14,7 @@ export interface IUserProfileEntity {
   expectedTypeWork: 'Na miejscu' | 'Gotowość do przeprowadzki' | 'Wyłącznie zdalnie' | 'Hybrydowo' | 'Bez znaczenia';
   targetWorkCity?: string;
   expectedContractType: 'Tylko UoP' | 'Możliwe B2B' | 'Możliwe UZ/UoD' | 'Brak preferencji';
-  expectedSalary?: string;
+  expectedSalary?: number;
   canTakeApprenticeship: 'TAK' | 'NIE';
   monthsOfCommercialExp: number;
   education?: string;
