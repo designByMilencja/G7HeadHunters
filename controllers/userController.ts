@@ -1,62 +1,28 @@
 import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { UserDb } from '../models/UserSchema';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { UserProfileDb } from '../models/UserProfileSchema';
-import { InfoResponse, ProfileResponse } from '../types';
+import { DecodedToken } from '../types';
 import { getGitHubUser } from '../utils/getGitHubUser';
+import { userInfo, userProfile } from '../utils/filterResponse';
 import { ValidationError } from '../utils/handleError';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-
-interface DecodedToken extends JwtPayload {
-  _id: string;
-}
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nieautoryzowany użytkownik.');
     }
 
     const user = await UserDb.findById(id);
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika o podanym ID.');
 
     const userData = await UserSkillDb.findOne({ email: user.email }).populate('profile');
 
-    const info: InfoResponse = {
-      avatar: userData.profile.githubAvatar,
-      firstName: userData.profile.firstName,
-      lastName: userData.profile.lastName,
-      email: user.email,
-      githubUsername: userData.profile.githubUsername,
-      phone: userData.profile.phone,
-      bio: userData.profile.bio,
-      status: user.status.status,
-    };
-
-    const profile: ProfileResponse = {
-      skills: {
-        courseCompletion: userData.courseCompletion,
-        courseEngagement: userData.courseEngagement,
-        projectDegree: userData.projectDegree,
-        teamProjectDegree: userData.teamProjectDegree,
-      },
-      expectations: {
-        expectedTypeWork: userData.profile.expectedTypeWork,
-        targetWorkCity: userData.profile.targetWorkCity,
-        expectedContractType: userData.profile.expectedContractType,
-        expectedSalary: userData.profile.expectedSalary,
-        canTakeApprenticeship: userData.profile.canTakeApprenticeship,
-        monthsOfCommercialExp: userData.profile.monthsOfCommercialExp,
-      },
-      education: userData.profile.education,
-      courses: userData.profile.courses,
-      workExperience: userData.profile.workExperience,
-      portfolioUrls: userData.profile.portfolioUrls,
-      bonusProjectUrls: userData.bonusProjectUrls,
-      projectUrls: userData.profile.projectUrls,
-    };
+    const info = userInfo(userData, user);
+    const profile = userProfile(userData);
 
     res.status(200).send({ info, profile });
   } catch (err) {
@@ -88,22 +54,21 @@ export const addUserProfile = async (req: Request, res: Response, next: NextFunc
   } = req.body;
 
   try {
-    if (!token) throw new ValidationError('Token not exist');
+    if (!token) throw new ValidationError('Nie przesłano tokena.');
 
     jwt.verify(token, process.env.JWT_SECRET, (err: jwt.VerifyErrors, decoded: DecodedToken) => {
       if (err) {
-        return res.status(403).send({ message: 'Invalid token' });
+        return res.status(403).send({ message: 'Nieprawidłowy token.' });
       }
       if (decoded._id !== id) {
-        return res.status(400).send({ message: 'Token not match to user' });
+        return res.status(401).send({ message: 'Nieautoryzowany użytkownik.' });
       }
     });
 
     const user = await UserDb.findOne({ email, token });
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika.');
 
-    let githubAvatar = await getGitHubUser(githubUsername);
-    if (!githubAvatar) githubAvatar = '';
+    const githubAvatar = await getGitHubUser(githubUsername);
 
     const userProfile = new UserProfileDb({
       email,
@@ -163,7 +128,7 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
 
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nieautoryzowany użytkownik.');
     }
 
     const updatedProfile = await UserProfileDb.findOneAndUpdate(

@@ -1,7 +1,8 @@
-import { Schema, model, Model, Document } from 'mongoose';
+import { Document, Model, model, Schema } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
-import { IAdmin, IHR, IStatus, IUser } from '../types';
+import { IAdmin, IHR, IStatus, IUser, Role, Status } from '../types';
 import { UserProfileDb } from './UserProfileSchema';
+import bcrypt from 'bcrypt';
 
 interface IUserDocument extends Omit<IUser, '_id'>, Omit<IHR, '_id'>, Omit<IAdmin, '_id'>, Document {}
 interface IUserModel extends Model<IUserDocument> {
@@ -12,7 +13,7 @@ const StatusSchema = new Schema<IStatus>(
   {
     status: {
       type: String,
-      enum: ['Dostępny', 'W trakcie rozmowy', 'Zatrudniony'],
+      enum: Status,
     },
   },
   { _id: false, timestamps: true, versionKey: false }
@@ -39,7 +40,7 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
     },
     role: {
       type: String,
-      enum: ['Admin', 'Kursant', 'HR'],
+      enum: Role,
     },
     active: {
       type: Boolean,
@@ -78,14 +79,14 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
 );
 
 UserSchema.pre('findOne', function (next) {
-  if (this.getQuery().role === 'Kursant') {
+  if (this.getQuery().role === Role.user) {
     this.select('email password token role active status');
   }
   next();
 });
 
 UserSchema.pre('findOne', function (next) {
-  if (this.getQuery().role === 'HR') {
+  if (this.getQuery().role === Role.hr) {
     this.select('email password token role fullName company maxReservedStudents users');
   }
   next();
@@ -105,7 +106,7 @@ UserSchema.statics.createNewUser = async function (user, role) {
         password: user.password,
         role: user.role,
         active: false,
-        status: { status: 'Dostępny' },
+        status: { status: Status.available },
       };
       const createdUser = await this.create(userData);
       return createdUser.save();
@@ -137,6 +138,14 @@ UserSchema.statics.createNewUser = async function (user, role) {
       throw new ValidationError('Invalid user role');
   }
 };
+
+UserSchema.pre('save', async function (next) {
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  next();
+});
 
 UserSchema.pre('save', async function (next) {
   if (this.isModified('status') && this.status.status === 'W trakcie rozmowy') {

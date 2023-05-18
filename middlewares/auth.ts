@@ -4,15 +4,15 @@ import { UserDb } from '../models/UserSchema';
 
 export const verifyCookie = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies.token;
-    if (!token) return res.status(403).json({ message: 'Token not found' });
+    const { token } = req.cookies;
+    if (!token) return res.status(403).json({ message: 'Nie znaleziono tokena.' });
 
     jwt.verify(token, process.env.JWT_SECRET, async (err: jwt.VerifyErrors) => {
-      if (err) return res.status(403).send('Invalid token');
+      if (err) return res.status(403).send('Nieprawidłowy token.');
     });
 
     const user = await UserDb.findOne({ token });
-    if (!user) return res.status(401).send('Unauthorized user');
+    if (!user) return res.status(401).send('Nieautoryzowany użytkownik.');
 
     req.user = user;
     next();

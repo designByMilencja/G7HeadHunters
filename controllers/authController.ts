@@ -1,32 +1,28 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { hashPwd } from '../utils/hashPwd';
 import { UserDb } from '../models/UserSchema';
 import { handleEmail } from '../utils/handleEmail';
 import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
-import { genToken } from '../utils/token';
-import { filterAdmin, filterHr, filterUser } from '../utils/filterRespons';
+import { generateToken } from '../utils/generateToken';
+import { filterAdmin, filterHr, filterUser } from '../utils/filterResponse';
 import { ValidationError } from '../utils/handleError';
-
-interface DecodedToken extends JwtPayload {
-  _id: string;
-}
+import { DecodedToken } from '../types';
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   try {
     const user = await UserDb.findOne({ email });
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError(`Użytkownik o emailu: ${email} nie istnieje.`);
     if (user.role === 'Kursant' && !user.active) {
-      return res.status(403).send({ message: 'User not active' });
+      return res.status(403).send({ message: 'Użytkownik nie jest jeszcze aktywny.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new ValidationError('Incorrect email or password');
+    if (!isMatch) throw new ValidationError('Niepoprawny email lub hasło');
 
-    const token = genToken(user._id, process.env.EXPIRES_TOKEN);
+    const token = generateToken(user._id, process.env.EXPIRES_TOKEN);
     user.token = token;
     const savedUser = await user.save();
 
@@ -53,7 +49,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 
   try {
     const user = await UserDb.findOne({ token });
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika.');
 
     user.token = null;
     await user.save();
@@ -76,9 +72,9 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 
   try {
     const user = await UserDb.findOne({ email });
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError(`Użytkownik o emailu: ${email} nie istnieje.`);
 
-    const token = genToken(user._id, process.env.EXPIRES_FORGOT_PWD_TOKEN);
+    const token = generateToken(user._id, process.env.EXPIRES_FORGOT_PWD_TOKEN);
     user.token = token;
     await user.save();
 
@@ -100,18 +96,18 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
   const { token, password } = req.body;
 
   try {
-    if (!token) throw new ValidationError('Token not exist');
+    if (!token) throw new ValidationError('Nie przesłano tokena.');
 
     jwt.verify(token, process.env.JWT_SECRET, (err: jwt.VerifyErrors) => {
       if (err) {
-        return res.status(403).send({ message: 'Invalid token' });
+        return res.status(403).send({ message: 'Nieprawidłowy token.' });
       }
     });
 
     const user = await UserDb.findOne({ token });
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika.');
 
-    user.password = await hashPwd(password);
+    user.password = password;
     user.token = null;
     await user.save();
 
@@ -127,18 +123,18 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
   try {
     const user = await UserDb.findById(id);
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika o podanym ID.');
 
     jwt.verify(req.cookies.token, process.env.JWT_SECRET, (err: jwt.VerifyErrors, decoded: DecodedToken) => {
       if (err) {
-        return res.status(403).send({ message: 'Invalid token' });
+        return res.status(403).send({ message: 'Nieprawidłowy token.' });
       }
       if (decoded._id !== id) {
-        return res.status(400).send({ message: 'Token not match to user' });
+        return res.status(401).send({ message: 'Nieautoryzowany użytkownik.' });
       }
     });
 
-    user.password = await hashPwd(password);
+    user.password = password;
     const savedUser = await user.save();
 
     let filteredResponse;
