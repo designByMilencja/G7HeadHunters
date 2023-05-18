@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { IUserProfileEntity } from '../types';
+import { Apprenticeship, ContractType, IUserProfileEntity, TypeWork } from '../types';
 import { UserSkillDb } from './UserSkillsSchema';
 import { ValidationError } from '../utils/handleError';
 
@@ -46,8 +46,8 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     },
     expectedTypeWork: {
       type: String,
-      enum: ['Na miejscu', 'Gotowość do przeprowadzki', 'Wyłącznie zdalnie', 'Hybrydowo', 'Bez znaczenia'],
-      default: 'Bez znaczenia',
+      enum: TypeWork,
+      default: TypeWork.whatever,
     },
     targetWorkCity: {
       type: String,
@@ -55,8 +55,8 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     },
     expectedContractType: {
       type: String,
-      enum: ['Tylko UoP', 'Możliwe B2B', 'Możliwe UZ/UoD', 'Brak preferencji'],
-      default: 'Brak preferencji',
+      enum: ContractType,
+      default: ContractType.noPreference,
     },
     expectedSalary: {
       type: Number,
@@ -64,8 +64,8 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     },
     canTakeApprenticeship: {
       type: String,
-      enum: ['TAK', 'NIE'],
-      default: 'NIE',
+      enum: Apprenticeship,
+      default: Apprenticeship.no,
     },
     monthsOfCommercialExp: {
       type: Number,

@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { UserDb } from '../models/UserSchema';
-import { UserSkillsExpectations } from '../types';
-import { filterHr, userToHrResponse } from '../utils/filterRespons';
-import { pagination, pipeline } from '../utils/pagination';
+import { Role, Status, UserSkillsExpectations } from '../types';
+import { filterHr, userToHrResponse } from '../utils/filterResponse';
+import { pagination, pipeline, getAvailableUsers } from '../utils/pagination';
+import { handleEmail } from '../utils/handleEmail';
+import { employedEmailTemplate } from '../templates/employedEmailTemplate';
 import { ValidationError } from '../utils/handleError';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -10,15 +12,8 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
   const limit = parseInt(req.query.limit as string) || 10;
 
   try {
-    const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true })
-      .distinct('email')
-      .lean()
-      .exec();
-
-    if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
-
     const { results, totalCount, totalPages } = await pagination(
-      pipeline({ email: { $in: availableUsers } }),
+      pipeline({ email: { $in: await getAvailableUsers() } }),
       page,
       limit
     );
@@ -43,24 +38,17 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
+  const filter = {
+    $or: [
+      { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
+      { 'profile.firstName': { $regex: `^.*${search}.*$`, $options: 'i' } },
+      { 'profile.lastName': { $regex: `^.*${search}.*$`, $options: 'i' } },
+    ],
+  };
+
   try {
-    const filter = {
-      $or: [
-        { email: { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { 'profile.firstName': { $regex: `^.*${search}.*$`, $options: 'i' } },
-        { 'profile.lastName': { $regex: `^.*${search}.*$`, $options: 'i' } },
-      ],
-    };
-
-    const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true })
-      .distinct('email')
-      .lean()
-      .exec();
-
-    if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
-
     const { results, totalCount, totalPages } = await pagination(
-      pipeline({ ...filter, email: { $in: availableUsers } }),
+      pipeline({ ...filter, email: { $in: await getAvailableUsers() } }),
       page,
       limit
     );
@@ -108,7 +96,7 @@ export const reservedUsers = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
-// @TODO wyslij maila adminowi ze kursant został zatrudniony
+
 export const setStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { email, status } = req.body;
@@ -146,6 +134,16 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
 
     user.status.status = status;
     await user.save();
+
+    if (status === Status.employed) {
+      const admin = await UserDb.findOne({ role: Role.admin });
+
+      await handleEmail({
+        to: admin.email,
+        subject: 'Kursant został zatrudniony',
+        html: employedEmailTemplate(user.email, hr.fullName),
+      });
+    }
 
     res.status(200).send(filterHr(hr));
   } catch (err) {
@@ -191,15 +189,8 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   };
 
   try {
-    const availableUsers = await UserDb.find({ 'status.status': 'Dostępny', active: true })
-      .distinct('email')
-      .lean()
-      .exec();
-
-    if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
-
     const { results, totalCount, totalPages } = await pagination(
-      pipeline({ ...filter, email: { $in: availableUsers } }),
+      pipeline({ ...filter, email: { $in: await getAvailableUsers() } }),
       page,
       limit
     );

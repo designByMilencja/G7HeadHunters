@@ -1,7 +1,8 @@
 import { Types } from 'mongoose';
+import { Role, Status } from '../common';
 
 export interface IStatus {
-  status: 'Dostępny' | 'W trakcie rozmowy' | 'Zatrudniony';
+  status: Status;
   updatedAt?: Date;
 }
 
@@ -10,9 +11,9 @@ export interface IUser {
   email: string;
   password: string;
   token?: string | null;
-  role: 'Admin' | 'Kursant' | 'HR';
+  role: Role;
   active?: boolean;
   status?: IStatus;
 }
 
-export type UserRespons = Omit<IUser, 'password' | 'token'>;
+export type UserResponse = Omit<IUser, 'password' | 'token'>;

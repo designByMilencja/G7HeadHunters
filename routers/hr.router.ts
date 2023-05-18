@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { availableUsers, filterUsers, reservedUsers, searchUsers, setStatus } from '../controllers/hrController';
 import { verifyCookie } from '../middlewares/auth';
-import { ROLES, verifyRole } from '../middlewares/checkRole';
+import { verifyRole } from '../middlewares/checkRole';
 import { validation } from '../middlewares/validation';
-import { setStatusSchema } from '../utils/validateSetStatus';
-import { filterUsersSchema } from '../middlewares/validation-schama';
+import { filterUsersSchema, setStatusSchema } from '../middlewares/validation-schama';
+import { Role } from '../types';
 
 export const hrRouter = Router();
 
 hrRouter
-  .get('/', verifyCookie, verifyRole(ROLES.hr), availableUsers)
-  .get('/search', verifyCookie, verifyRole(ROLES.hr), searchUsers)
-  .get('/filter', verifyCookie, verifyRole(ROLES.hr), validation(filterUsersSchema), filterUsers)
-  .get('/:id', verifyCookie, verifyRole(ROLES.hr), reservedUsers)
-  .patch('/status/:id', verifyCookie, verifyRole(ROLES.hr), validation(setStatusSchema), setStatus);
+  .get('/', verifyCookie, verifyRole(Role.hr), availableUsers)
+  .get('/search', verifyCookie, verifyRole(Role.hr), searchUsers)
+  .get('/filter', verifyCookie, verifyRole(Role.hr), validation(filterUsersSchema), filterUsers)
+  .get('/:id', verifyCookie, verifyRole(Role.hr), reservedUsers)
+  .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus);

@@ -1,11 +1,12 @@
 import { Types } from 'mongoose';
+import { Role } from '../common';
 
 export interface IAdmin {
   _id?: Types.ObjectId;
   email: string;
   password: string;
   token?: string | null;
-  role: 'Admin' | 'Kursant' | 'HR';
+  role: Role;
 }
 
-export type AdminRespons = Omit<IAdmin, 'password' | 'token'>;
+export type AdminResponse = Omit<IAdmin, 'password' | 'token'>;

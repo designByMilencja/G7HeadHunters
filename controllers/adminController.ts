@@ -7,17 +7,17 @@ import { UserSkillDb } from '../models/UserSkillsSchema';
 import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types';
 import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
 import { handleEmail } from '../utils/handleEmail';
-import { genToken } from '../utils/token';
+import { generateToken } from '../utils/generateToken';
 import { UserDb } from '../models/UserSchema';
-import { registerEmailTemplate } from '../templates/registerEmailTemplate';
+import { registerUserEmailTemplate } from '../templates/registerUserEmailTemplate';
 import { registerHrEmailTemplate } from '../templates/registerHrEmailTemplate';
-import { hashPwd } from '../utils/hashPwd';
-import { filterAdmin, filterHr } from '../utils/filterRespons';
+import { filterAdmin, filterHr } from '../utils/filterResponse';
+import { randomPassword } from '../utils/randomPassword';
 import { ValidationError } from '../utils/handleError';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
   const csvFile = req.file;
-  if (!csvFile) throw new ValidationError('No file found');
+  if (!csvFile) throw new ValidationError('Nie przesłano żadnego pliku CSV.');
 
   try {
     const csv = await readFile(path.join(storageDir(), 'csv', csvFile.filename), 'utf8');
@@ -40,7 +40,7 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
     const duplicateEmails: ICsvValidation[] = emailsFromCsv
       .map((email: string, i: number) => {
         const duplicate = emailsFromCsv.indexOf(email) !== i;
-        return duplicate ? { row: i + 1, field: email, message: 'Ten email już istnieje' } : null;
+        return duplicate ? { row: i + 1, field: email, message: 'Podany email istnieje już w bazie danych.' } : null;
       })
       .filter((data) => data !== null);
 
@@ -69,7 +69,7 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
     res.status(200).send({ ok: true, fileName: csvFile.filename });
   } catch (err) {
     if (err.code === 'ENOENT') {
-      throw new ValidationError('File not found');
+      throw new ValidationError('Nie znaleziono pliku.');
     }
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));
@@ -104,17 +104,15 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
             .map((d) => d.trim()),
         });
 
-        const randomPassword = Math.random().toString(36).slice(-8);
-
         const newUser = new UserDb({
           email,
-          password: await hashPwd(randomPassword),
+          password: randomPassword(),
           role: 'Kursant',
         });
 
         const user = await UserDb.createNewUser(newUser, newUser.role);
 
-        const token = genToken(user._id, process.env.EXPIRES_REGISTER_TOKEN);
+        const token = generateToken(user._id, process.env.EXPIRES_REGISTER_TOKEN);
         user.token = token;
         await user.save();
 
@@ -123,7 +121,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
         await handleEmail({
           to: user.email,
           subject: 'Rejestracja użytkownika',
-          html: registerEmailTemplate(link, email, randomPassword),
+          html: registerUserEmailTemplate(link, email, newUser.password),
         });
 
         return skills.save();
@@ -133,13 +131,13 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
     if (data.length === addSkills.length) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     } else {
-      res.send({ message: 'Something went wrong, try again' });
+      res.send({ message: 'Nie zgadza się ilość zapisanych danych, spróbuj ponownie.' });
     }
 
     res.status(201).send(addSkills);
   } catch (err) {
     if (err.code === 'ENOENT') {
-      throw new ValidationError('File not found');
+      throw new ValidationError('Nie znaleziono pliku.');
     }
     if (fileName) {
       await unlink(path.join(storageDir(), 'csv', fileName));
@@ -151,12 +149,10 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
 export const registerHr = async (req: Request, res: Response, next: NextFunction) => {
   const { email, fullName, company, maxReservedStudents } = req.body;
 
-  const randomPassword = Math.random().toString(36).slice(-8);
-
   try {
     const newUser = new UserDb({
       email,
-      password: await hashPwd(randomPassword),
+      password: randomPassword(),
       role: 'HR',
       fullName,
       company,
@@ -170,7 +166,7 @@ export const registerHr = async (req: Request, res: Response, next: NextFunction
     await handleEmail({
       to: newHr.email,
       subject: 'Rejestracja użytkownika',
-      html: registerHrEmailTemplate(link, email, randomPassword),
+      html: registerHrEmailTemplate(link, email, newUser.password),
     });
 
     res.status(201).send(filterHr(newHr));
@@ -184,11 +180,11 @@ export const getAdmin = async (req: Request, res: Response, next: NextFunction) 
 
   try {
     if (req.user._id.toString() !== id) {
-      throw new ValidationError('Token not match to user');
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
     }
 
     const user = await UserDb.findById(id);
-    if (!user) throw new ValidationError('User not found');
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika o podanym ID');
 
     res.status(200).send(filterAdmin(user));
   } catch (err) {

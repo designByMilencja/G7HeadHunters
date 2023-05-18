@@ -1,4 +1,4 @@
-export const registerEmailTemplate = (url: string, user: string, pwd: string) => {
+export const registerUserEmailTemplate = (url: string, user: string, pwd: string) => {
   return `
     <h1>Rejestracja</h1>
     <p>Kliknij poniższy przycisk, aby dokończyć rejestrację użytkownika:</p>

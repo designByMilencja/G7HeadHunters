@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { Apprenticeship, ContractType, Status, TypeWork } from '../common';
 
 export interface IUserProfileEntity {
   _id?: Types.ObjectId;
@@ -11,11 +12,11 @@ export interface IUserProfileEntity {
   portfolioUrls?: Array<string>;
   projectUrls: Array<string>;
   bio?: string;
-  expectedTypeWork: 'Na miejscu' | 'Gotowość do przeprowadzki' | 'Wyłącznie zdalnie' | 'Hybrydowo' | 'Bez znaczenia';
+  expectedTypeWork: TypeWork;
   targetWorkCity?: string;
-  expectedContractType: 'Tylko UoP' | 'Możliwe B2B' | 'Możliwe UZ/UoD' | 'Brak preferencji';
+  expectedContractType: ContractType;
   expectedSalary?: number;
-  canTakeApprenticeship: 'TAK' | 'NIE';
+  canTakeApprenticeship: Apprenticeship;
   monthsOfCommercialExp: number;
   education?: string;
   workExperience?: string;
@@ -31,11 +32,11 @@ interface Skills {
 }
 
 interface Expectations {
-  expectedTypeWork: 'Na miejscu' | 'Gotowość do przeprowadzki' | 'Wyłącznie zdalnie' | 'Hybrydowo' | 'Bez znaczenia';
-  targetWorkCity?: string;
-  expectedContractType: 'Tylko UoP' | 'Możliwe B2B' | 'Możliwe UZ/UoD' | 'Brak preferencji';
-  expectedSalary?: string;
-  canTakeApprenticeship: 'TAK' | 'NIE';
+  expectedTypeWork: TypeWork;
+  targetWorkCity: string;
+  expectedContractType: ContractType;
+  expectedSalary: string;
+  canTakeApprenticeship: Apprenticeship;
   monthsOfCommercialExp: number;
 }
 
@@ -56,7 +57,7 @@ export interface InfoResponse {
   email: string;
   phone?: string;
   bio?: string;
-  status: 'Dostępny' | 'W trakcie rozmowy' | 'Zatrudniony';
+  status: Status;
 }
 
 export interface ProfileResponse {

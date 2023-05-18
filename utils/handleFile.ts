@@ -24,7 +24,7 @@ export const upload = multer({
       cb(null, true);
     } else {
       cb(null, false);
-      return cb(new Error('Only .csv format file allowed!'));
+      return cb(new Error('Dozwolony jest tylko format plików .csv'));
     }
   },
 });
