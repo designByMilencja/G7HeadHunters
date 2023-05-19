@@ -1,11 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import { UserDb } from '../models/UserSchema';
 import { Role, Status, UserSkillsExpectations } from '../types';
-import { filterHr, userToHrResponse } from '../utils/filterResponse';
+import { filterHr, userInfo, userProfile, userToHrResponse } from '../utils/filterResponse';
 import { pagination, pipeline, getAvailableUsers } from '../utils/pagination';
 import { handleEmail } from '../utils/handleEmail';
 import { employedEmailTemplate } from '../templates/employedEmailTemplate';
 import { ValidationError } from '../utils/handleError';
+import { UserSkillDb } from '../models/UserSkillsSchema';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
   const page = parseInt(req.query.page as string) || 1;
@@ -205,6 +206,29 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
       .filter((user) => user);
 
     res.status(200).send({ users: reservedUsersProfile, totalCount, totalPages });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const { email } = req.body;
+
+  try {
+    if (req.user._id.toString() !== id) {
+      throw new ValidationError('Nieautoryzowany użytkownik.');
+    }
+
+    const user = await UserDb.findOne({ email });
+    if (!user) throw new ValidationError('Nie znaleziono użytkownika o podanym ID.');
+
+    const userData = await UserSkillDb.findOne({ email: user.email }).populate('profile');
+
+    const info = userInfo(userData, user);
+    const profile = userProfile(userData);
+
+    res.status(200).send({ info, profile });
   } catch (err) {
     next(err);
   }
