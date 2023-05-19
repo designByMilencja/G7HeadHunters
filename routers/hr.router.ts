@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { availableUsers, filterUsers, reservedUsers, searchUsers, setStatus } from '../controllers/hrController';
+import {
+  availableUsers,
+  filterUsers,
+  getUser,
+  reservedUsers,
+  searchUsers,
+  setStatus,
+} from '../controllers/hrController';
 import { verifyCookie } from '../middlewares/auth';
 import { verifyRole } from '../middlewares/checkRole';
 import { validation } from '../middlewares/validation';
@@ -13,4 +20,5 @@ hrRouter
   .get('/search', verifyCookie, verifyRole(Role.hr), searchUsers)
   .get('/filter', verifyCookie, verifyRole(Role.hr), validation(filterUsersSchema), filterUsers)
   .get('/:id', verifyCookie, verifyRole(Role.hr), reservedUsers)
-  .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus);
+  .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus)
+  .get('/user/:id', verifyCookie, verifyRole(Role.hr), getUser);
