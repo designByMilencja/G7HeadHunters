@@ -38,8 +38,17 @@ export const filterUsersSchema = yup.object().shape({
     .string()
     .oneOf(Object.values(ContractType), 'Nie prawidłowe dane w polu typ kontraktu')
     .notRequired(),
-  expectedSalaryFrom: yup.number().min(0, 'Minimalna wartość w polu oczekiwana wypłata to 0').notRequired(),
-  expectedSalaryTo: yup.number().min(0, 'Minimalna wartość w polu oczekiwana wypłata to 0').notRequired(),
+  expectedSalaryFrom: yup
+    .number()
+    .min(0, 'Minimalna wartość w polu oczekiwane wynagrodzenie to 0')
+    .typeError('Dozwolone są tylko liczny w polu oczekiwane wynagrodzenie od')
+    .notRequired(),
+  expectedSalaryTo: yup
+    .number()
+    .min(0, 'Minimalna wartość w polu oczekiwane wynagrodzenie to 0')
+    .max(99999, 'Maksymalna wartość w polu oczekiwane wynagrodzenie to 99999')
+    .typeError('Dozwolone są tylko liczny w polu oczekiwane wynagrodzenie do')
+    .notRequired(),
   canTakeApprenticeship: yup.string().oneOf(['TAK', 'NIE'], 'Wybierz prawidłowe dane: "TAK" lub "NIE"').notRequired(),
   monthsOfCommercialExp: yup
     .number()

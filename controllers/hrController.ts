@@ -35,9 +35,9 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
 };
 
 export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
-  const { search = '' } = req.body;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
+  const search = req.query.search || '';
 
   const filter = {
     $or: [
@@ -156,38 +156,41 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
-  const {
-    courseCompletion,
-    courseEngagement,
-    projectDegree,
-    teamProjectDegree,
-    monthsOfCommercialExp,
-    expectedSalaryFrom,
-    expectedSalaryTo,
-    expectedTypeWork,
-    expectedContractType,
-    canTakeApprenticeship,
-  } = req.body;
+  const courseCompletion = req.query.courseCompletion;
+  const courseEngagement = req.query.courseEngagement;
+  const projectDegree = req.query.projectDegree;
+  const teamProjectDegree = req.query.teamProjectDegree;
+  const monthsOfCommercialExp = req.query.monthsOfCommercialExp;
+  const expectedSalaryFrom = req.query.expectedSalaryFrom;
+  const expectedSalaryTo = req.query.expectedSalaryTo;
+  const expectedTypeWork = req.query.expectedTypeWork;
+  const expectedContractType = req.query.expectedContractType;
+  const canTakeApprenticeship = req.query.canTakeApprenticeship;
 
-  if (!req.body || Object.keys(req.body).length === 0) throw new ValidationError('Brak wybranych filtrów');
+  const isFilters = Object.keys(req.query).every((filter) => ['page', 'limit'].includes(filter));
+  if (!req.query || isFilters) throw new ValidationError('Brak wybranych filtrów');
 
   const filter = {
-    ...(courseCompletion && { courseCompletion: { $gte: parseInt(courseCompletion) } }),
-    ...(courseEngagement && { courseEngagement: { $gte: parseInt(courseEngagement) } }),
-    ...(projectDegree && { projectDegree: { $gte: parseInt(projectDegree) } }),
-    ...(teamProjectDegree && { teamProjectDegree: { $gte: parseInt(teamProjectDegree) } }),
-    ...(monthsOfCommercialExp && { 'profile.monthsOfCommercialExp': { $gte: parseInt(monthsOfCommercialExp) } }),
+    ...(courseCompletion && { courseCompletion: { $gte: parseInt(courseCompletion as string) } }),
+    ...(courseEngagement && { courseEngagement: { $gte: parseInt(courseEngagement as string) } }),
+    ...(projectDegree && { projectDegree: { $gte: parseInt(projectDegree as string) } }),
+    ...(teamProjectDegree && { teamProjectDegree: { $gte: parseInt(teamProjectDegree as string) } }),
+    ...(monthsOfCommercialExp && {
+      'profile.monthsOfCommercialExp': { $gte: parseInt(monthsOfCommercialExp as string) },
+    }),
     ...(expectedTypeWork && { 'profile.expectedTypeWork': { $eq: expectedTypeWork } }),
     ...(expectedContractType && { 'profile.expectedContractType': { $eq: expectedContractType } }),
     ...(canTakeApprenticeship && { 'profile.canTakeApprenticeship': { $eq: canTakeApprenticeship } }),
     ...(expectedSalaryFrom &&
       expectedSalaryTo && {
         'profile.expectedSalary': {
-          $gte: parseInt(expectedSalaryFrom),
-          $lte: parseInt(expectedSalaryTo),
+          $gte: parseInt(expectedSalaryFrom as string),
+          $lte: parseInt(expectedSalaryTo as string),
         },
       }),
   };
+
+  console.log(filter);
 
   try {
     const { results, totalCount, totalPages } = await pagination(
@@ -212,8 +215,7 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  const { email } = req.body;
+  const { id, email } = req.params;
 
   try {
     if (req.user._id.toString() !== id) {

@@ -21,4 +21,4 @@ hrRouter
   .get('/filter', verifyCookie, verifyRole(Role.hr), validation(filterUsersSchema), filterUsers)
   .get('/:id', verifyCookie, verifyRole(Role.hr), reservedUsers)
   .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus)
-  .get('/user/:id', verifyCookie, verifyRole(Role.hr), getUser);
+  .get('/user/:id/:email', verifyCookie, verifyRole(Role.hr), getUser);
