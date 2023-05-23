@@ -17,7 +17,7 @@ export const hrRouter = Router();
 
 hrRouter
   .get('/', verifyCookie, verifyRole(Role.hr), availableUsers)
-  .get('/search', verifyCookie, verifyRole(Role.hr), searchUsers)
+  .get('/search/:id', verifyCookie, verifyRole(Role.hr), searchUsers)
   .get('/filter', verifyCookie, verifyRole(Role.hr), validation(filterUsersSchema), filterUsers)
   .get('/:id', verifyCookie, verifyRole(Role.hr), reservedUsers)
   .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus)

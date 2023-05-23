@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import { UserDb } from '../models/UserSchema';
+import { UserSkillDb } from '../models/UserSkillsSchema';
 import { Role, Status, UserSkillsExpectations } from '../types';
 import { filterHr, userInfo, userProfile, userToHrResponse } from '../utils/filterResponse';
-import { pagination, pipeline, getAvailableUsers } from '../utils/pagination';
+import { pagination, pipeline, getAvailableUsers, getReservedUsers } from '../utils/pagination';
 import { handleEmail } from '../utils/handleEmail';
 import { employedEmailTemplate } from '../templates/employedEmailTemplate';
 import { ValidationError } from '../utils/handleError';
-import { UserSkillDb } from '../models/UserSkillsSchema';
 
 export const availableUsers = async (req: Request, res: Response, next: NextFunction) => {
   const page = parseInt(req.query.page as string) || 1;
@@ -35,9 +35,11 @@ export const availableUsers = async (req: Request, res: Response, next: NextFunc
 };
 
 export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const search = req.query.search || '';
+  const tab = req.query.tab;
 
   const filter = {
     $or: [
@@ -48,8 +50,16 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
   };
 
   try {
+    if (req.user._id.toString() !== id) {
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
+    }
+
+    let users;
+    if (tab === '1') users = await getAvailableUsers();
+    if (tab === '2') users = await getReservedUsers(id);
+
     const { results, totalCount, totalPages } = await pagination(
-      pipeline({ ...filter, email: { $in: await getAvailableUsers() } }),
+      pipeline({ ...filter, email: { $in: users } }),
       page,
       limit
     );
@@ -189,8 +199,6 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
         },
       }),
   };
-
-  console.log(filter);
 
   try {
     const { results, totalCount, totalPages } = await pagination(
