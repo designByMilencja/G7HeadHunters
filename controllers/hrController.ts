@@ -39,7 +39,9 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const search = req.query.search || '';
-  const tab = req.query.tab;
+  const tab = req.query.tab as string;
+
+  if (!['1', '2'].includes(tab)) throw new ValidationError('Nieprawidłowy parametr zakładki.');
 
   const filter = {
     $or: [
@@ -163,8 +165,10 @@ export const setStatus = async (req: Request, res: Response, next: NextFunction)
 };
 
 export const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
+  const tab = req.query.tab as string;
 
   const courseCompletion = req.query.courseCompletion;
   const courseEngagement = req.query.courseEngagement;
@@ -176,6 +180,8 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   const expectedTypeWork = req.query.expectedTypeWork;
   const expectedContractType = req.query.expectedContractType;
   const canTakeApprenticeship = req.query.canTakeApprenticeship;
+
+  if (!['1', '2'].includes(tab)) throw new ValidationError('Nieprawidłowy parametr zakładki.');
 
   const isFilters = Object.keys(req.query).every((filter) => ['page', 'limit'].includes(filter));
   if (!req.query || isFilters) throw new ValidationError('Brak wybranych filtrów');
@@ -201,8 +207,16 @@ export const filterUsers = async (req: Request, res: Response, next: NextFunctio
   };
 
   try {
+    if (req.user._id.toString() !== id) {
+      throw new ValidationError('Nie masz dostępu do tego zasobu.');
+    }
+
+    let users;
+    if (tab === '1') users = await getAvailableUsers();
+    if (tab === '2') users = await getReservedUsers(id);
+
     const { results, totalCount, totalPages } = await pagination(
-      pipeline({ ...filter, email: { $in: await getAvailableUsers() } }),
+      pipeline({ ...filter, email: { $in: users } }),
       page,
       limit
     );
