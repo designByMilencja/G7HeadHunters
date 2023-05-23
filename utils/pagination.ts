@@ -3,7 +3,6 @@ import { IUserSkillsDocument, UserSkillDb } from '../models/UserSkillsSchema';
 import { IUserProfileDocument } from '../models/UserProfileSchema';
 import { UserDb } from '../models/UserSchema';
 import { ValidationError } from './handleError';
-import { availableUsers } from '../controllers/hrController';
 
 type UserSkillsExpectations = IUserSkillsDocument & { profile: IUserProfileDocument };
 type Result = [results: UserSkillsExpectations[], totalPage: { count: number }[]];
@@ -14,7 +13,15 @@ const defaultLimit = 10;
 export const getAvailableUsers = async () => {
   const users = await UserDb.find({ 'status.status': 'Dostępny', active: true }).distinct('email').lean().exec();
 
-  if (availableUsers.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
+  if (users.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
+
+  return users;
+};
+
+export const getReservedUsers = async (id: string) => {
+  const users = await UserDb.findById(id).distinct('users').lean().exec();
+
+  if (users.length === 0) throw new ValidationError('Brak dostępnych kursantów.');
 
   return users;
 };
