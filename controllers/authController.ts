@@ -34,8 +34,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     res
       .status(200)
       .cookie('token', token, {
-        secure: false, //true jeżeli https
-        domain: 'localhost',
+        secure: process.env.COOKIE_SECURE === 'true',
+        domain: process.env.COOKIE_DOMAIN,
         httpOnly: true,
       })
       .send(filteredResponse);
@@ -57,8 +57,8 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     res
       .status(200)
       .clearCookie('token', {
-        secure: false, //true jeżeli https
-        domain: 'localhost',
+        secure: process.env.COOKIE_SECURE === 'true',
+        domain: process.env.COOKIE_DOMAIN,
         httpOnly: true,
       })
       .send({ ok: true });
