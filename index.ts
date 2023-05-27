@@ -1,4 +1,4 @@
-import express, { json } from 'express';
+import express, { json, Router } from 'express';
 import 'express-async-errors';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -12,7 +12,14 @@ import { adminRouter } from './routers/admin.router';
 import { userRouter } from './routers/user.router';
 import { hrRouter } from './routers/hr.router';
 import { job } from './utils/scheduleOfChangeStatus';
+import { User } from './types';
 import { handleError } from './utils/handleError';
+
+declare module 'express' {
+  interface Request {
+    user?: User;
+  }
+}
 
 dotenv.config();
 
@@ -37,10 +44,14 @@ app.use(
 
 job.start();
 
-app.use('/auth', authRouter);
-app.use('/admin', adminRouter);
-app.use('/user', userRouter);
-app.use('/hr', hrRouter);
+const router = Router();
+
+router.use('/auth', authRouter);
+router.use('/admin', adminRouter);
+router.use('/user', userRouter);
+router.use('/hr', hrRouter);
+
+app.use('/headhunter', router);
 
 app.use(handleError);
 

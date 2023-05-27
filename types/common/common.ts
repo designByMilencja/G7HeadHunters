@@ -1,4 +1,5 @@
 import { JwtPayload } from 'jsonwebtoken';
+import { Types } from 'mongoose';
 
 export enum Status {
   available = 'Dostępny',
@@ -34,4 +35,10 @@ export enum Apprenticeship {
 
 export interface DecodedToken extends JwtPayload {
   _id: string;
+}
+
+export interface User {
+  _id?: Types.ObjectId;
+  email: string;
+  role: Role;
 }
