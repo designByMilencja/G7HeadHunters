@@ -5,9 +5,10 @@ import { UserDb } from '../models/UserSchema';
 import { handleEmail } from '../utils/handleEmail';
 import { forgotPwdEmailTemplate } from '../templates/forgotPwdEmailTemplate';
 import { generateToken } from '../utils/generateToken';
-import { filterAdmin, filterHr, filterUser } from '../utils/filterResponse';
-import { ValidationError } from '../utils/handleError';
+import { handleRole } from '../utils/handleRole';
 import { DecodedToken } from '../types';
+import sanitizeHtml from 'sanitize-html';
+import { ValidationError } from '../utils/handleError';
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
@@ -26,10 +27,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     user.token = token;
     const savedUser = await user.save();
 
-    let filteredResponse;
-    if (user.role === 'Kursant') filteredResponse = filterUser(savedUser);
-    if (user.role === 'HR') filteredResponse = filterHr(savedUser);
-    if (user.role === 'Admin') filteredResponse = filterAdmin(savedUser);
+    const filteredResponse = handleRole(savedUser);
 
     res
       .status(200)
@@ -107,7 +105,7 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
     const user = await UserDb.findOne({ token });
     if (!user) throw new ValidationError('Nie znaleziono użytkownika.');
 
-    user.password = password;
+    user.password = sanitizeHtml(password);
     user.token = null;
     await user.save();
 
@@ -134,13 +132,10 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
       }
     });
 
-    user.password = password;
+    user.password = sanitizeHtml(password);
     const savedUser = await user.save();
 
-    let filteredResponse;
-    if (user.role === 'Kursant') filteredResponse = filterUser(savedUser);
-    if (user.role === 'HR') filteredResponse = filterHr(savedUser);
-    if (user.role === 'Admin') filteredResponse = filterAdmin(savedUser);
+    const filteredResponse = handleRole(savedUser);
 
     res.status(200).json(filteredResponse);
   } catch (err) {

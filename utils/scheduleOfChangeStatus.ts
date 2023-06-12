@@ -5,13 +5,13 @@ import { Status } from '../types';
 export const job = new CronJob('0 0 * * *', async () => {
   const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
   const usersToUpdate = await UserDb.find({
-    'status.status': Status.reserved,
+    'status.status': Status.RESERVED,
     updatedAt: { $lt: tenDaysAgo },
   });
 
   await Promise.all(
     usersToUpdate.map((user) => {
-      user.status.status = Status.available;
+      user.status.status = Status.AVAILABLE;
       return user.save();
     })
   );

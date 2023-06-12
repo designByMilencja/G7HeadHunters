@@ -47,7 +47,7 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     expectedTypeWork: {
       type: String,
       enum: TypeWork,
-      default: TypeWork.whatever,
+      default: TypeWork.WHATEVER,
     },
     targetWorkCity: {
       type: String,
@@ -56,7 +56,7 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     expectedContractType: {
       type: String,
       enum: ContractType,
-      default: ContractType.noPreference,
+      default: ContractType.NOPREFERENCE,
     },
     expectedSalary: {
       type: Number,
@@ -65,7 +65,7 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     canTakeApprenticeship: {
       type: String,
       enum: Apprenticeship,
-      default: Apprenticeship.no,
+      default: Apprenticeship.NO,
     },
     monthsOfCommercialExp: {
       type: Number,
