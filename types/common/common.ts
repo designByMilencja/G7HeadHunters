@@ -2,35 +2,35 @@ import { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
 export enum Status {
-  available = 'Dostępny',
-  reserved = 'W trakcie rozmowy',
-  employed = 'Zatrudniony',
+  AVAILABLE = 'Dostępny',
+  RESERVED = 'W trakcie rozmowy',
+  EMPLOYED = 'Zatrudniony',
 }
 
 export enum Role {
-  admin = 'Admin',
-  user = 'Kursant',
-  hr = 'HR',
+  ADMIN = 'Admin',
+  USER = 'Kursant',
+  HR = 'HR',
 }
 
 export enum TypeWork {
-  onSite = 'Na miejscu',
-  readyToMove = 'Gotowość do przeprowadzki',
-  remoteWork = 'Wyłącznie zdalnie',
-  hybrid = 'Hybrydowo',
-  whatever = 'Bez znaczenia',
+  ONSITE = 'Na miejscu',
+  READYTOMOVE = 'Gotowość do przeprowadzki',
+  REMOTEWORK = 'Wyłącznie zdalnie',
+  HYBRID = 'Hybrydowo',
+  WHATEVER = 'Bez znaczenia',
 }
 
 export enum ContractType {
-  uop = 'Tylko UoP',
-  b2b = 'Możliwe B2B',
-  uod = 'Możliwe UZ/UoD',
-  noPreference = 'Brak preferencji',
+  UOP = 'Tylko UoP',
+  B2B = 'Możliwe B2B',
+  UOD = 'Możliwe UZ/UoD',
+  NOPREFERENCE = 'Brak preferencji',
 }
 
 export enum Apprenticeship {
-  yes = 'TAK',
-  no = 'NIE',
+  YES = 'TAK',
+  NO = 'NIE',
 }
 
 export interface DecodedToken extends JwtPayload {
@@ -41,4 +41,9 @@ export interface User {
   _id?: Types.ObjectId;
   email: string;
   role: Role;
+}
+
+export enum HrTabs {
+  AVAILABLE = '1',
+  RESERVED = '2',
 }

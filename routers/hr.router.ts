@@ -10,15 +10,15 @@ import {
 import { verifyCookie } from '../middlewares/auth';
 import { verifyRole } from '../middlewares/checkRole';
 import { validation } from '../middlewares/validation';
-import { filterUsersSchema, setStatusSchema } from '../middlewares/validation-schama';
+import { filterUsersSchema, setStatusSchema, searchSchema } from '../validators/validationHrSchama';
 import { Role } from '../types';
 
 export const hrRouter = Router();
 
 hrRouter
-  .get('/', verifyCookie, verifyRole(Role.hr), availableUsers)
-  .get('/search/:id', verifyCookie, verifyRole(Role.hr), searchUsers)
-  .get('/filter/:id', verifyCookie, verifyRole(Role.hr), validation(filterUsersSchema), filterUsers)
-  .get('/:id', verifyCookie, verifyRole(Role.hr), reservedUsers)
-  .patch('/status/:id', verifyCookie, verifyRole(Role.hr), validation(setStatusSchema), setStatus)
-  .get('/user/:id/:email', verifyCookie, verifyRole(Role.hr), getUser);
+  .get('/', verifyCookie, verifyRole(Role.HR), availableUsers)
+  .get('/search/:id', verifyCookie, verifyRole(Role.HR), validation(searchSchema), searchUsers)
+  .get('/filter/:id', verifyCookie, verifyRole(Role.HR), validation(filterUsersSchema), filterUsers)
+  .get('/:id', verifyCookie, verifyRole(Role.HR), reservedUsers)
+  .patch('/status/:id', verifyCookie, verifyRole(Role.HR), validation(setStatusSchema), setStatus)
+  .get('/user/:id/:email', verifyCookie, verifyRole(Role.HR), getUser);

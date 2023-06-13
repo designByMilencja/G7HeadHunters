@@ -1,4 +1,4 @@
-import { Document, Model, model, Schema } from 'mongoose';
+import { Document, Model, model, sanitizeFilter, Schema } from 'mongoose';
 import { ValidationError } from '../utils/handleError';
 import { IAdmin, IHR, IStatus, IUser, Role, Status } from '../types';
 import { UserProfileDb } from './UserProfileSchema';
@@ -79,14 +79,14 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
 );
 
 UserSchema.pre('findOne', function (next) {
-  if (this.getQuery().role === Role.user) {
+  if (this.getQuery().role === Role.USER) {
     this.select('email password token role active status');
   }
   next();
 });
 
 UserSchema.pre('findOne', function (next) {
-  if (this.getQuery().role === Role.hr) {
+  if (this.getQuery().role === Role.HR) {
     this.select('email password token role fullName company maxReservedStudents users');
   }
   next();
@@ -106,9 +106,10 @@ UserSchema.statics.createNewUser = async function (user, role) {
         password: user.password,
         role: user.role,
         active: false,
-        status: { status: Status.available },
+        status: { status: Status.AVAILABLE },
       };
-      const createdUser = await this.create(userData);
+      const sanitizedUserData = sanitizeFilter(userData);
+      const createdUser = await this.create(sanitizedUserData);
       return createdUser.save();
 
     case 'HR':
@@ -122,7 +123,8 @@ UserSchema.statics.createNewUser = async function (user, role) {
         maxReservedStudents: user.maxReservedStudents,
         users: [],
       };
-      const createdHr = await this.create(hrData);
+      const sanitizedHrData = sanitizeFilter(hrData);
+      const createdHr = await this.create(sanitizedHrData);
       return createdHr.save();
 
     case 'Admin':
@@ -131,7 +133,8 @@ UserSchema.statics.createNewUser = async function (user, role) {
         password: user.password,
         role: user.role,
       };
-      const createdAdmin = await this.create(adminData);
+      const sanitizedAdminData = sanitizeFilter(adminData);
+      const createdAdmin = await this.create(sanitizedAdminData);
       return createdAdmin.save();
 
     default:
