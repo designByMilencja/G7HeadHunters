@@ -24,14 +24,14 @@ export interface IUserProfileEntity {
   reservationExpiryDate?: Date;
 }
 
-interface Skills {
+export interface Skills {
   courseCompletion: number;
   courseEngagement: number;
   projectDegree: number;
   teamProjectDegree: number;
 }
 
-interface Expectations {
+export interface Expectations {
   expectedTypeWork: TypeWork;
   targetWorkCity: string;
   expectedContractType: ContractType;

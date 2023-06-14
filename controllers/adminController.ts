@@ -5,7 +5,7 @@ import path from 'path';
 import { storageDir } from '../utils/handleFile';
 import { UserSkillDb } from '../models/UserSkillsSchema';
 import { ICsvSkillsErrors, ICsvValidation, IUserSkills } from '../types';
-import { validateHeader, validateRow, validateRowEmail, validateRowUrls } from '../utils/validateUserSkills';
+import { validateHeader, validateRow } from '../validators/validationUserSkills';
 import { handleEmail } from '../utils/handleEmail';
 import { generateToken } from '../utils/generateToken';
 import { UserDb } from '../models/UserSchema';
@@ -13,6 +13,7 @@ import { registerUserEmailTemplate } from '../templates/registerUserEmailTemplat
 import { registerHrEmailTemplate } from '../templates/registerHrEmailTemplate';
 import { filterAdmin, filterHr } from '../utils/filterResponse';
 import { randomPassword } from '../utils/randomPassword';
+import sanitizeHtml from 'sanitize-html';
 import { ValidationError } from '../utils/handleError';
 
 export const validateUserSkills = async (req: Request, res: Response, next: NextFunction) => {
@@ -40,21 +41,21 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
     const duplicateEmails: ICsvValidation[] = emailsFromCsv
       .map((email: string, i: number) => {
         const duplicate = emailsFromCsv.indexOf(email) !== i;
-        return duplicate ? { row: i + 1, field: email, message: 'Podany email istnieje już w bazie danych.' } : null;
+        return duplicate ? { row: i + 1, field: email, message: 'Podany email istnieje już w pliku .csv' } : null;
       })
       .filter((data) => data !== null);
+
+    if (duplicateEmails.length > 0) {
+      return res.status(200).send({ errors: duplicateEmails });
+    }
 
     const rowsFromCsv = await Promise.all(
       data.map(async (dataCsv: any, i) => {
         const errors = {} as ICsvSkillsErrors;
-        const row = i + 1;
 
-        errors.email = await validateRowEmail(dataCsv.email, i + 1, duplicateEmails);
-        errors.courseCompletion = validateRow(dataCsv.courseCompletion, row);
-        errors.courseEngagement = validateRow(dataCsv.courseEngagement, row);
-        errors.teamProjectDegree = validateRow(dataCsv.teamProjectDegree, row);
-        errors.projectDegree = validateRow(dataCsv.projectDegree, row);
-        errors.bonusProjectUrls = validateRowUrls(dataCsv.bonusProjectUrls, row);
+        for (const key of Object.keys(dataCsv)) {
+          errors[key] = await validateRow(key, dataCsv[key], i + 1);
+        }
 
         return Object.values(errors).some((error) => error) ? errors : null;
       })
@@ -71,10 +72,11 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
     if (err.code === 'ENOENT') {
       throw new ValidationError('Nie znaleziono pliku.');
     }
+    next(err);
+  } finally {
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));
     }
-    next(err);
   }
 };
 
@@ -105,7 +107,7 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
         });
 
         const newUser = new UserDb({
-          email,
+          email: sanitizeHtml(email),
           password: randomPassword(),
           role: 'Kursant',
         });
@@ -139,10 +141,11 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
     if (err.code === 'ENOENT') {
       throw new ValidationError('Nie znaleziono pliku.');
     }
+    next(err);
+  } finally {
     if (fileName) {
       await unlink(path.join(storageDir(), 'csv', fileName));
     }
-    next(err);
   }
 };
 
@@ -151,7 +154,7 @@ export const registerHr = async (req: Request, res: Response, next: NextFunction
 
   try {
     const newUser = new UserDb({
-      email,
+      email: sanitizeHtml(email),
       password: randomPassword(),
       role: 'HR',
       fullName,

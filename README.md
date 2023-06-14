@@ -1,8 +1,10 @@
-# Project Head Hunters 
-This is group project for Mega Kurs.
+# Project HeadHunter Back-End
+This is the group project for Mega Kurs.
 
 ## Table of Contents
 * [General info](#general-info)
+* [Front-End Repository](#front-end-repository)
+* [Video](#video)
 * [Screenshots](#screenshots)
 * [Features](#features)
 * [Technologies used](#technologies-used)
@@ -10,6 +12,12 @@ This is group project for Mega Kurs.
 
 ## General Info
 Group project carried out to specification and mock-ups provided. Working in scram technology, under the supervision of a global Scrum Master and the client.
+
+## Front-End Repository
+[wachen82 / g7-headhunter-client](https://github.com/wachen82/g7-headhunter-client)
+
+## Video
+[![MegaK v2: g7-headhunter: Demo Final](https://github.com/wachen82/g7-headhunter-client/assets/98549349/8dc0c57b-b834-41b0-bc2a-4dd44abe46ff)](https://youtu.be/B_WKuYeoT2Y)
 
 ## Screenshots
 [![LoginView](https://i.postimg.cc/V6GS0zB4/Widok-logowania.png)](https://postimg.cc/phjVgbSn)
@@ -42,6 +50,11 @@ Group project carried out to specification and mock-ups provided. Working in scr
 
 ## Contact 
 
-Created by: designbymilencja@gmail.com rafal.szczepanik23@gmail.com markiewicz267@gmail.com s.nadolny@hotmail.com greg.wachenek@gmail.com
+Created by:
+designbymilencja@gmail.com
+rafal.szczepanik23@gmail.com
+markiewicz267@gmail.com
+s.nadolny@hotmail.com
+greg.wachenek@gmail.com
 
 feel free to contact us!
