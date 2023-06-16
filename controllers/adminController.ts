@@ -72,11 +72,10 @@ export const validateUserSkills = async (req: Request, res: Response, next: Next
     if (err.code === 'ENOENT') {
       throw new ValidationError('Nie znaleziono pliku.');
     }
-    next(err);
-  } finally {
     if (csvFile) {
       await unlink(path.join(storageDir(), 'csv', csvFile.filename));
     }
+    next(err);
   }
 };
 
@@ -130,10 +129,8 @@ export const saveUserSkills = async (req: Request, res: Response, next: NextFunc
       })
     );
 
-    if (data.length === addSkills.length) {
-      await unlink(path.join(storageDir(), 'csv', fileName));
-    } else {
-      res.send({ message: 'Nie zgadza się ilość zapisanych danych, spróbuj ponownie.' });
+    if (data.length !== addSkills.length) {
+      throw new ValidationError('Nie zgadza się ilość zapisanych danych, spróbuj ponownie.');
     }
 
     res.status(201).send(addSkills);
